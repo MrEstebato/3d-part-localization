@@ -1,11 +1,11 @@
-import piece_utils as piece
+from preprocessing.get_cylinders import get_cylinders
 import networkx as nx
 
 if __name__ == "__main__":
-    path_to_step_file = "../doors2.stp"
+    path_to_step_file = "doors/doors2.stp"
 
     # Obtain all cylinders in the piece
-    cylinders = piece.get_cylinders(path_to_step_file)
+    cylinders = get_cylinders(path_to_step_file)
 
     """graphs: list[nx.Graph] = []
 
