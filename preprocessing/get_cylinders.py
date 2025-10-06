@@ -1,5 +1,3 @@
-import networkx as nx
-import matplotlib.pyplot as plt
 import time
 
 from OCC.Core.STEPControl import STEPControl_Reader
@@ -50,7 +48,6 @@ def get_cylinders(path):
             properties = analyze_cylinder_face(i, face)
             
             if properties:
-                print(f"Cylinder Analysis {i}:")
                 for key, value in properties.items():
                     print(f"  {key}: {value}")
                 print("-" * 40)
