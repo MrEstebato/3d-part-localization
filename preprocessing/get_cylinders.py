@@ -50,13 +50,12 @@ def get_cylinders(path):
             properties = analyze_cylinder_face(i, face)
             
             if properties:
-                print(f"Advanced Cylinder Analysis {i}:")
+                print(f"Cylinder Analysis {i}:")
                 for key, value in properties.items():
                     print(f"  {key}: {value}")
                 print("-" * 40)
                 
                 cylinders.append((face, properties))
-    
-    print(f"Advanced analysis completed in {time.time() - start_time:.3f} seconds")
-    print(f"Found {len(cylinders)} cylinders")
+
+    print(f"Obtained {len(cylinders)} cylinders in {time.time() - start_time:.3f} seconds")
     return cylinders
