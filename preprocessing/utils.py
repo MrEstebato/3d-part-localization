@@ -9,3 +9,5 @@ def load_step(path):
 
     if status != 1:
         raise Exception(f"Error reading STEP file: {path}")
+    
+    return pieze
