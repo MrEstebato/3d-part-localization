@@ -30,10 +30,7 @@ def get_cylinders(pieze):
 
     start_time = time.time()
     
-    pieze.TransferRoots()
-    shape = pieze.OneShape()
-    
-    topo_explorer = TopologyExplorer(shape)
+    topo_explorer = TopologyExplorer(pieze)
     cylinders = []
     
     for i, face in enumerate(topo_explorer.faces()):

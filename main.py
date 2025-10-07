@@ -1,19 +1,15 @@
 from preprocessing.get_cylinders import get_cylinders
 from preprocessing.create_graph import create_graph
-from OCC.Core.STEPControl import STEPControl_Reader
+import preprocessing.utils as utils
 
 if __name__ == "__main__":
     path_to_step_file = "doors/heatstake_solo.STEP"
 
-    # Load Step File
-    step_reader = STEPControl_Reader()
-    status = step_reader.ReadFile(path_to_step_file)
-    
-    if status != 1:
-        raise Exception(f"Error reading STEP file: {path_to_step_file}")
+    # Load the step file
+    pieze = utils.load_step(path_to_step_file)
 
     # Obtain all cylinders in the piece
-    cylinders = get_cylinders(step_reader)
+    cylinders = get_cylinders(pieze)
 
     # Create graphs
     graphs = create_graph(cylinders)
