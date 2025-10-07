@@ -1,11 +1,10 @@
 import time
 
-from OCC.Core.STEPControl import STEPControl_Reader
 from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
 from OCC.Core.GeomAbs import GeomAbs_Cylinder
 from OCC.Extend.TopologyUtils import TopologyExplorer
 
-def get_cylinders(path):    
+def get_cylinders(pieze):    
     def analyze_cylinder_face(cylinder_id, face):
         surface_adaptor = BRepAdaptor_Surface(face, True)
         cylinder_geom = surface_adaptor.Cylinder()
@@ -15,6 +14,7 @@ def get_cylinders(path):
         direction = axis.Direction()
         radius = cylinder_geom.Radius()
         
+        # TODO define what properties we really need and use
         properties = {
             "cylinder_id": cylinder_id,
             "center_x": location.X(),
@@ -29,14 +29,9 @@ def get_cylinders(path):
         return properties
 
     start_time = time.time()
-    step_reader = STEPControl_Reader()
-    status = step_reader.ReadFile(path)
     
-    if status != 1:
-        raise Exception(f"Error reading STEP file: {path}")
-    
-    step_reader.TransferRoots()
-    shape = step_reader.OneShape()
+    pieze.TransferRoots()
+    shape = pieze.OneShape()
     
     topo_explorer = TopologyExplorer(shape)
     cylinders = []
