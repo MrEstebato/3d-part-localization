@@ -1,5 +1,5 @@
-from preprocessing.get_cylinders import get_cylinders
-from preprocessing.create_graph import create_graph
+from preprocessing.OCC.get_cylinders import get_cylinders
+from preprocessing.OCC.create_graph import create_graph
 import preprocessing.utils as utils
 
 if __name__ == "__main__":
