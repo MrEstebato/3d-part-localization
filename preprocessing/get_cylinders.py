@@ -20,10 +20,6 @@ def get_cylinders(pieze):
             "center_x": location.X(),
             "center_y": location.Y(),
             "center_z": location.Z(),
-            "radius": radius,
-            "axis_x": direction.X(),
-            "axis_y": direction.Y(),
-            "axis_z": direction.Z()
         }
         
         return properties
