@@ -4,15 +4,25 @@ from OCC.Core.TopoDS import topods
 from ..utils import vertex_to_tuple, point_inside_sphere_xyz
 import networkx as nx
 
+
 def create_graphs(cylinders, radius=20.0):
 
     graphs = []
 
     for cylinder in cylinders:
-        (_, properties) = cylinder
-        center = (properties["center_x"], properties["center_y"], properties["center_z"])
+        (face, properties) = cylinder
+        center = (
+            properties["center_x"],
+            properties["center_y"],
+            properties["center_z"],
+        )
         print("Extracting local graph around cylinder at", center)
-        G, mapping = extract_local_brep_graph(cylinder, center, radius)
+        G, mapping = extract_local_brep_graph(face, center, radius)
+
+        # ?
+        if not mapping:
+            print("  No faces found inside the sphere, skipping.")
+            continue
         graphs.append((G, mapping))
 
     return graphs
@@ -28,7 +38,8 @@ def extract_local_brep_graph(pieze, center_xyz, r):
     """
 
     # Explorer for faces in the whole shape
-    exp_face = TopExp_Explorer(pieze, TopAbs_FACE)
+    exp_face = TopExp_Explorer()
+    exp_face.Init(pieze, TopAbs_FACE)
 
     G = nx.Graph()
     face_id_to_shape = {}
@@ -37,7 +48,7 @@ def extract_local_brep_graph(pieze, center_xyz, r):
     while exp_face.More():
         fshape = exp_face.Current()
         face = topods.Face(fshape)
-        
+
         try:
             fid = face.HashCode(1000000)
         except Exception:
@@ -78,12 +89,14 @@ def extract_local_brep_graph(pieze, center_xyz, r):
         if len(flist) >= 2:
             # connect all faces that share this edge (usually 2)
             for i in range(len(flist)):
-                for j in range(i+1, len(flist)):
+                for j in range(i + 1, len(flist)):
                     G.add_edge(flist[i], flist[j], shared_edge=eid)
 
     return G, face_id_to_shape
 
+
 # --- B-Rep exploration helpers ----------------------------------------------
+
 
 def face_vertices_xyz(face):
     """Return list of boundary vertex (x,y,z) tuples for a TopoDS_Face."""
@@ -95,6 +108,7 @@ def face_vertices_xyz(face):
         exp_v.Next()
     return coords
 
+
 def face_edges(face):
     """Yield TopoDS_Edge objects that bound the face."""
     exp_e = TopExp_Explorer(face, TopAbs_EDGE)
@@ -102,13 +116,14 @@ def face_edges(face):
         yield topods.Edge(exp_e.Current())
         exp_e.Next()
 
+
 def face_centroid_from_vertices(face):
     """Approximate centroid as mean of boundary vertices coordinates."""
     verts = face_vertices_xyz(face)
     if not verts:
-        return (0.0,0.0,0.0)
+        return (0.0, 0.0, 0.0)
     sx = sum(p[0] for p in verts)
     sy = sum(p[1] for p in verts)
     sz = sum(p[2] for p in verts)
     n = len(verts)
-    return (sx/n, sy/n, sz/n)
+    return (sx / n, sy / n, sz / n)
