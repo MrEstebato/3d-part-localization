@@ -8,22 +8,16 @@ from OCC.Extend.TopologyUtils import TopologyExplorer
 def get_cylinders(pieze):
     def analyze_cylinder_face(cylinder_id, face):
         surface_adaptor = BRepAdaptor_Surface(face, True)
-        cylinder_geom = surface_adaptor.Cylinder()
-
-        axis = cylinder_geom.Axis()
-        location = axis.Location()
-
-        # TODO define what properties we really need and use
+        cyl = surface_adaptor.Cylinder()
+        axis = cyl.Axis()
+        loc = axis.Location()
         properties = {
             "cylinder_id": cylinder_id,
-            "center_x": location.X(),
-            "center_y": location.Y(),
-            "center_z": location.Z(),
+            "center_x": loc.X(),
+            "center_y": loc.Y(),
+            "center_z": loc.Z(),
         }
-
         return properties
-
-    start_time = time.time()
 
     topo_explorer = TopologyExplorer(pieze)
     cylinders = []
@@ -35,13 +29,10 @@ def get_cylinders(pieze):
             properties = analyze_cylinder_face(i, face)
 
             if properties:
-                for key, value in properties.items():
-                    print(f"  {key}: {value}")
-                print("-" * 40)
+                """print(
+                    f"Cylinder {i}: center=({properties['center_x']:.2f}, {properties['center_y']:.2f}, {properties['center_z']:.2f})"
+                )"""
 
                 cylinders.append((face, properties))
 
-    print(
-        f"Obtained {len(cylinders)} cylinders in {time.time() - start_time:.3f} seconds"
-    )
     return cylinders

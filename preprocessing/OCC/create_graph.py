@@ -1,129 +1,180 @@
 from OCC.Core.TopExp import TopExp_Explorer
 from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX
 from OCC.Core.TopoDS import topods
-from ..utils import vertex_to_tuple, point_inside_sphere_xyz
+from ..utils import vertex_to_tuple, point_inside_sphere_xyz, get_centroid
 import networkx as nx
 
+HASH_BOUND = 1_000_000
 
-def create_graphs(cylinders, radius=20.0):
 
+def create_graphs(piece_shape, cylinders, radius=20.0):
+    """Build per-cylinder local B-Rep graphs.
+
+    piece_shape: full part shape (TopoDS_Shape)
+    cylinders: list of (face, properties) from get_cylinders
+    radius: sphere radius (mm)
+
+    Returns list of (G, payload) where payload contains shape maps.
+    """
+    topo = precompute_topology(piece_shape)
     graphs = []
-
-    for cylinder in cylinders:
-        (face, properties) = cylinder
-        center = (
-            properties["center_x"],
-            properties["center_y"],
-            properties["center_z"],
-        )
-        print("Extracting local graph around cylinder at", center)
-        G, mapping = extract_local_brep_graph(face, center, radius)
-
-        # ?
-        if not mapping:
-            print("  No faces found inside the sphere, skipping.")
+    for face, props in cylinders:
+        center = (props["center_x"], props["center_y"], props["center_z"])
+        G, payload = build_local_graph(center, radius, topo, props)
+        if G.number_of_nodes() == 0:
             continue
-        graphs.append((G, mapping))
-
+        graphs.append((G, payload))
     return graphs
 
 
-def extract_local_brep_graph(pieze, center_xyz, r):
-    """
-    Build a NetworkX graph of faces fully inside sphere(center_xyz, r).
-    - detect_crossing: if True, detect edges whose curves pass into the sphere (sampling) and report them (no splitting).
-    Returns: (G, face_id_to_shape)
-      - G: NetworkX Graph where node = face_id (int) with node attributes
-      - face_id_to_shape: dict face_id -> TopoDS_Face (so you can get the original geometry later)
-    """
+def hash(shape):
+    try:
+        return shape.HashCode(HASH_BOUND)
+    except Exception:
+        return id(shape)
 
-    # Explorer for faces in the whole shape
-    exp_face = TopExp_Explorer()
-    exp_face.Init(pieze, TopAbs_FACE)
 
-    G = nx.Graph()
-    face_id_to_shape = {}
+def precompute_topology(piece_shape):
+    vertices = {}
+    edges = {}
+    faces = {}
     edge_to_faces = {}
 
+    exp_face = TopExp_Explorer(piece_shape, TopAbs_FACE)
     while exp_face.More():
-        fshape = exp_face.Current()
-        face = topods.Face(fshape)
-
-        try:
-            fid = face.HashCode(1000000)
-        except Exception:
-            # fallback to python hash of the python object
-            fid = id(face)
-
-        verts_xyz = face_vertices_xyz(face)  # list of (x,y,z)
-        if not verts_xyz:
-            exp_face.Next()
-            continue
-
-        all_inside = all(point_inside_sphere_xyz(v, center_xyz, r) for v in verts_xyz)
-
-        if not all_inside:
-            exp_face.Next()
-            continue
-
-        centroid = face_centroid_from_vertices(face)
-        node_attrs = {
-            "centroid": centroid,
-            "vertex_count": len(verts_xyz),
-        }
-        G.add_node(fid, **node_attrs)
-        face_id_to_shape[fid] = face
-
-        # add mapping from each edge (hash) -> face id (for adjacency)
-        for edge in face_edges(face):
-            try:
-                eid = edge.HashCode(1000000)
-            except Exception:
-                eid = id(edge)
+        fshape = topods.Face(exp_face.Current())
+        fid = hash(fshape)
+        # Collect face vertices
+        face_vertex_ids = []
+        exp_v = TopExp_Explorer(fshape, TopAbs_VERTEX)
+        while exp_v.More():
+            vshape = topods.Vertex(exp_v.Current())
+            vid = hash(vshape)
+            if vid not in vertices:
+                pt = vertex_to_tuple(vshape)
+                vertices[vid] = {"shape": vshape, "point": pt}
+            face_vertex_ids.append(vid)
+            exp_v.Next()
+        # Collect face edges
+        face_edge_ids = []
+        exp_e = TopExp_Explorer(fshape, TopAbs_EDGE)
+        while exp_e.More():
+            eshape = topods.Edge(exp_e.Current())
+            eid = hash(eshape)
+            if eid not in edges:
+                edge_vertex_ids = []
+                exp_ev = TopExp_Explorer(eshape, TopAbs_VERTEX)
+                while exp_ev.More():
+                    vshape2 = topods.Vertex(exp_ev.Current())
+                    vid2 = hash(vshape2)
+                    if vid2 not in vertices:
+                        pt2 = vertex_to_tuple(vshape2)
+                        vertices[vid2] = {"shape": vshape2, "point": pt2}
+                    edge_vertex_ids.append(vid2)
+                    exp_ev.Next()
+                edges[eid] = {"shape": eshape, "vertices": edge_vertex_ids}
+            face_edge_ids.append(eid)
             edge_to_faces.setdefault(eid, []).append(fid)
-
+            exp_e.Next()
+        faces[fid] = {
+            "shape": fshape,
+            "vertices": face_vertex_ids,
+            "edges": face_edge_ids,
+        }
         exp_face.Next()
 
-    # Build adjacency by iterating edges that belong to multiple included faces
-    for eid, flist in edge_to_faces.items():
-        if len(flist) >= 2:
-            # connect all faces that share this edge (usually 2)
-            for i in range(len(flist)):
-                for j in range(i + 1, len(flist)):
-                    G.add_edge(flist[i], flist[j], shared_edge=eid)
+    # Reverse maps
+    vertex_to_edges = {vid: [] for vid in vertices}
+    for eid, edata in edges.items():
+        for vid in edata["vertices"]:
+            vertex_to_edges[vid].append(eid)
+    vertex_to_faces = {vid: [] for vid in vertices}
+    for fid, fdata in faces.items():
+        for vid in fdata["vertices"]:
+            vertex_to_faces[vid].append(fid)
 
-    return G, face_id_to_shape
-
-
-# --- B-Rep exploration helpers ----------------------------------------------
-
-
-def face_vertices_xyz(face):
-    """Return list of boundary vertex (x,y,z) tuples for a TopoDS_Face."""
-    coords = []
-    exp_v = TopExp_Explorer(face, TopAbs_VERTEX)
-    while exp_v.More():
-        v_shape = exp_v.Current()
-        coords.append(vertex_to_tuple(v_shape))
-        exp_v.Next()
-    return coords
+    return {
+        "vertices": vertices,
+        "edges": edges,
+        "faces": faces,
+        "edge_to_faces": edge_to_faces,
+        "vertex_to_edges": vertex_to_edges,
+        "vertex_to_faces": vertex_to_faces,
+    }
 
 
-def face_edges(face):
-    """Yield TopoDS_Edge objects that bound the face."""
-    exp_e = TopExp_Explorer(face, TopAbs_EDGE)
-    while exp_e.More():
-        yield topods.Edge(exp_e.Current())
-        exp_e.Next()
+def build_local_graph(center_xyz, radius, topo, cyl_props):
+    vertices = topo["vertices"]
+    edges = topo["edges"]
+    faces = topo["faces"]
 
+    included_vertices = {
+        vid
+        for vid, v in vertices.items()
+        if point_inside_sphere_xyz(v["point"], center_xyz, radius)
+    }
+    if not included_vertices:
+        return nx.Graph(), {}
 
-def face_centroid_from_vertices(face):
-    """Approximate centroid as mean of boundary vertices coordinates."""
-    verts = face_vertices_xyz(face)
-    if not verts:
-        return (0.0, 0.0, 0.0)
-    sx = sum(p[0] for p in verts)
-    sy = sum(p[1] for p in verts)
-    sz = sum(p[2] for p in verts)
-    n = len(verts)
-    return (sx / n, sy / n, sz / n)
+    included_edges = set()
+    for eid, edata in edges.items():
+        vlist = edata["vertices"]
+        if vlist and all(v in included_vertices for v in vlist):
+            included_edges.add(eid)
+
+    included_faces = set()
+    for fid, fdata in faces.items():
+        vlist = fdata["vertices"]
+        if vlist and all(v in included_vertices for v in vlist):
+            included_faces.add(fid)
+
+    G = nx.Graph()
+
+    # Add vertex nodes
+    for vid in included_vertices:
+        x, y, z = vertices[vid]["point"]
+        G.add_node(vid, kind="vertex", x=x, y=y, z=z)
+
+    # Add edge nodes and connect to vertices
+    for eid in included_edges:
+        G.add_node(eid, kind="edge")
+        for v in edges[eid]["vertices"]:
+            if v in included_vertices:
+                G.add_edge(eid, v, relation="edge-vertex")
+
+    # Add face nodes and connect to edges
+    for fid in included_faces:
+        centroid = get_centroid([vertices[v]["point"] for v in faces[fid]["vertices"]])
+        G.add_node(
+            fid,
+            kind="face",
+            centroid=centroid,
+            vertex_count=len(faces[fid]["vertices"]),
+        )
+        for eid in faces[fid]["edges"]:
+            if eid in included_edges:
+                G.add_edge(fid, eid, relation="face-edge")
+
+    # Face-face adjacency via shared edges
+    for eid, flist in topo["edge_to_faces"].items():
+        if eid not in included_edges:
+            continue
+        face_subset = [fid for fid in flist if fid in included_faces]
+        if len(face_subset) >= 2:
+            for i in range(len(face_subset)):
+                for j in range(i + 1, len(face_subset)):
+                    G.add_edge(
+                        face_subset[i],
+                        face_subset[j],
+                        relation="face-face",
+                        via_edge=eid,
+                    )
+
+    payload = {
+        "faces": {fid: faces[fid]["shape"] for fid in included_faces},
+        "edges": {eid: edges[eid]["shape"] for eid in included_edges},
+        "vertices": {vid: vertices[vid]["shape"] for vid in included_vertices},
+        "center": center_xyz,
+        "cylinder_properties": cyl_props,
+    }
+    return G, payload

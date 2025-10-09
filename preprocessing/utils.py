@@ -19,8 +19,8 @@ def load_step(path):
 # Helper functions for geometry
 def vertex_to_tuple(vtx):
     """Return (x,y,z) tuple from a TopoDS_Vertex."""
-    v = topods.Vertex(vtx)  # ensure vertex type
-    p = BRep_Tool.Pnt(v)  # returns gp_Pnt
+    v = topods.Vertex(vtx)
+    p = BRep_Tool.Pnt(v)
     return (p.X(), p.Y(), p.Z())
 
 
@@ -31,6 +31,11 @@ def point_inside_sphere_xyz(pt_xyz, center_xyz, r):
     return (dx * dx + dy * dy + dz * dz) <= (r * r + 1e-12)
 
 
-# Visualization helper
-def display_graph(G, mapping):
-    pass
+def get_centroid(points):
+    if not points:
+        return (0.0, 0.0, 0.0)
+    sx = sum(p[0] for p in points)
+    sy = sum(p[1] for p in points)
+    sz = sum(p[2] for p in points)
+    n = len(points)
+    return (sx / n, sy / n, sz / n)
