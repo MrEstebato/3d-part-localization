@@ -1,5 +1,3 @@
-import time
-
 from OCC.Core.BRepAdaptor import BRepAdaptor_Surface
 from OCC.Core.GeomAbs import GeomAbs_Cylinder
 from OCC.Extend.TopologyUtils import TopologyExplorer
