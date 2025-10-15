@@ -1,4 +1,6 @@
 import cadquery as cq
+import time
+import os
 
 def centroide(cuerpo: cq.Workplane):
     sumaX = 0
@@ -14,18 +16,35 @@ def centroide(cuerpo: cq.Workplane):
     sumaZ = sumaZ / len(cuerpo.vertices().all())
     return [sumaX, sumaY, sumaZ]
 
+# Inicializar tiempo
+initial_time = time.time()
+
 # Modelo completo
-solids = cq.importers.importStep("Heatstake_solo.step").solids().all()[0]
+solids = cq.importers.importStep("../doors/doors1.stp").solids()
 
 # Encontrar posibles tapas
 tapas = solids.edges("%CIRCLE").ancestors("Face").faces("%PLANE")
 
 # Encontrar tapas sin geometrías raras
-tapas = tapas.faces(cq.selectors.InverseSelector(cq.selectors.TypeSelector("OTHER")))
+tapas = tapas.faces(cq.selectors.InverseSelector(cq.selectors.TypeSelector(
+    ("OTHER")
+    )))
+
+aux = None
+
+for t in tapas.all():
+    pos = False
+    if(len(t.edges(cq.selectors.TypeSelector("LINE")).all()) == 0):
+        if(aux is None):
+            aux = t
+        else:
+            aux.add(t)
+#print(len(aux.all()))
+tapas = aux
 
 tapas_filtradas = None
 
-print("")
+#print("")
 
 # Filtrar tapas por aquellas que constan de una figura con un agujero
 for t in tapas.all():
@@ -34,28 +53,38 @@ for t in tapas.all():
             tapas_filtradas = t
         else:
             tapas_filtradas.add(t)
-print(len(tapas_filtradas.all()))
+#print(len(tapas_filtradas.all()))
 
 
 cilindros = []          # Caras que componen el cuerpo del cilindro
 
 # Busca cuerpo del cilindro que esté conectado a la tapa
 for t in tapas_filtradas.all():
-    cilindros.append(t.edges().ancestors("Face").faces(cq.selectors.InverseSelector(cq.selectors.TypeSelector("CIRCLE"))))
-print(len(cilindros))
+    cilindros.append(t.edges().ancestors("Face"))
+#print(len(cilindros))
 
 data = []
+
+heatstakesC = None
+delimitador = 10
 
 # Por cada cilindro, calcula su centroide y agrega todas las caras dentro del radio de busqueda
 for c in cilindros:
     centro = centroide(c)
-    data.append(solids.faces(cq.selectors.BoxSelector((centro[0] - 5, centro[1] - 5, centro[2] -5), (centro[0] + 5, centro[1] + 5, centro[2] + 5))))
+    data.append(solids.faces(cq.selectors.BoxSelector((centro[0] - delimitador, centro[1] -delimitador, centro[2] -delimitador), (centro[0] + delimitador, centro[1] + delimitador, centro[2] + delimitador))))
+    #print(len(data))
+    #print(centro)
+    if(heatstakesC is None):
+        heatstakesC = data[-1]
+    else:
+        heatstakesC.add(data[-1])
     # Construye tu grafo
-    for f in solids.faces(cq.selectors.BoxSelector((centro[0] - 5, centro[1] - 5, centro[2] -5), (centro[0] + 5, centro[1] + 5, centro[2] + 5))).all():
-        for v in f.vertices().all():
-            #grafo.add(v,f)
-            pass
-                
+    # for f in solids.faces(cq.selectors.BoxSelector((centro[0] - delimitador, centro[1] - delimitador, centro[2] -delimitador), (centro[0] + delimitador, centro[1] + delimitador, centro[2] + delimitador))).all():
+    #     for v in f.vertices().all():
+    #         #grafo.add(v,f)
+    #         pass
+        
+print(time.time()-initial_time)
 print(len(data))
 
 #cuerpo = None
@@ -69,4 +98,8 @@ print(len(data))
 # Ejecuta el modelo
 # modelo.predict(data) -> 
 
-#cq.exporters.export(cuerpo,"hts_solo_pr1.step")
+path = "../doors/exportaciones/p7"
+file = "/d1_e.step"
+os.makedirs(path, exist_ok=True)
+
+cq.exporters.export(heatstakesC, path+file)
