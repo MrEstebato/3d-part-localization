@@ -1,9 +1,8 @@
 import cadquery as cq
-import time
 import os
 from ..utils_CQ import get_centroid
 
-def find_cylinders(path):
+def find_cylinders(path, box_size=10):
     # Full Model
     solids = cq.importers.importStep(path).solids()
 
@@ -46,12 +45,11 @@ def find_cylinders(path):
     possible_heatstakes = []
 
     heatstakes_workplane = None
-    delimiter = 10
 
     # For each cylinder, calculate its centroid and add all faces within the search box
     for cylinder in cylinders:
         centroid = get_centroid(cylinder)
-        possible_heatstakes.append(solids.faces(cq.selectors.BoxSelector((centroid[0] - delimiter, centroid[1] - delimiter, centroid[2] - delimiter), (centroid[0] + delimiter, centroid[1] + delimiter, centroid[2] + delimiter))))
+        possible_heatstakes.append(solids.faces(cq.selectors.BoxSelector((centroid[0] - box_size, centroid[1] - box_size, centroid[2] - box_size), (centroid[0] + box_size, centroid[1] + box_size, centroid[2] + box_size))))
         #print(len(possible_heatstakes))
         #print(centroid)
         if(heatstakes_workplane is None):
@@ -63,7 +61,7 @@ def find_cylinders(path):
         #     for v in f.vertices().all():
         #         #grafo.add(v,f)
         #         pass
-    print(len(possible_heatstakes))
+    #print(len(possible_heatstakes))
 
     return possible_heatstakes
 

@@ -1,12 +1,14 @@
-from preprocessing.OCC.get_cylinders import get_cylinders
-from preprocessing.OCC.create_graph import create_graphs
+# from preprocessing.OCC.get_cylinders import get_cylinders
+# from preprocessing.OCC.create_graph import create_graphs
+#import preprocessing.utils_OCC as utils_OCC
+
 from preprocessing.CQ.find_cylinders import find_cylinders
-import preprocessing.utils_OCC as utils_OCC
 import time
 
 # CONSTANTS
 path_to_step_file = "doors/doors1.stp"  # Path to the STEP file to be processed
-radius = 20.0  # mm, radius around cylinder center to include faces
+box_size = 10  # mm, length from the centroid of the cylinder to the sides of the box
+#radius = 20.0  # mm, radius around cylinder center to include faces
 
 
 if __name__ == "__main__":
