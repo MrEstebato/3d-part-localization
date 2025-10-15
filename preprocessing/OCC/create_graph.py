@@ -1,7 +1,7 @@
 from OCC.Core.TopExp import TopExp_Explorer
 from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_EDGE, TopAbs_VERTEX
 from OCC.Core.TopoDS import topods
-from ..utils import vertex_to_tuple, point_inside_sphere_xyz, get_centroid
+from ..utils_OCC import vertex_to_tuple, point_inside_sphere_xyz, get_centroid
 import networkx as nx
 
 HASH_BOUND = 1_000_000
