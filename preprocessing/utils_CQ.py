@@ -1,6 +1,6 @@
 import cadquery as cq
 
-def centroide(cuerpo: cq.Workplane):
+def get_centroid(cuerpo: cq.Workplane):
     sumaX = 0
     sumaY = 0
     sumaZ = 0

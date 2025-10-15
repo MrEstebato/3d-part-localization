@@ -1,26 +1,23 @@
 import cadquery as cq
 import time
 import os
-from ..utils_CQ import centroide
+from ..utils_CQ import get_centroid
 
 def find_cylinders(path):
-    # Inicializar tiempo
-    initial_time = time.time()
+    # Full Model
+    solids = cq.importers.importStep(path).solids()
 
-    # Modelo completo
-    solids = cq.importers.importStep("../doors/doors1.stp").solids()
+    # Find possible lids
+    lids = solids.edges("%CIRCLE").ancestors("Face").faces("%PLANE")
 
-    # Encontrar posibles tapas
-    tapas = solids.edges("%CIRCLE").ancestors("Face").faces("%PLANE")
-
-    # Encontrar tapas sin geometrías raras
-    tapas = tapas.faces(cq.selectors.InverseSelector(cq.selectors.TypeSelector(
+    # Find lids without strange geometries
+    lids = lids.faces(cq.selectors.InverseSelector(cq.selectors.TypeSelector(
         ("OTHER")
         )))
 
     aux = None
 
-    for t in tapas.all():
+    for t in lids.all():
         pos = False
         if(len(t.edges(cq.selectors.TypeSelector("LINE")).all()) == 0):
             if(aux is None):
@@ -28,56 +25,52 @@ def find_cylinders(path):
             else:
                 aux.add(t)
     #print(len(aux.all()))
-    tapas = aux
 
-    tapas_filtradas = None
+    lids = aux
+    filtered_lids = None
 
-    #print("")
-
-    # Filtrar tapas por aquellas que constan de una figura con un agujero
-    for t in tapas.all():
+    # Filter lids that consist of a figure with a hole
+    for t in lids.all():
         if len(t.wires().all()) == 2:
-            if(tapas_filtradas is None):
-                tapas_filtradas = t
+            if(filtered_lids is None):
+                filtered_lids = t
             else:
-                tapas_filtradas.add(t)
-    #print(len(tapas_filtradas.all()))
+                filtered_lids.add(t)
+    #print(len(filtered_lids.all()))
 
 
-    cilindros = []          # Caras que componen el cuerpo del cilindro
+    cylinders = []              # Faces that make up the body of the cylinder
 
-    # Busca cuerpo del cilindro que esté conectado a la tapa
-    for t in tapas_filtradas.all():
-        cilindros.append(t.edges().ancestors("Face"))
-    #print(len(cilindros))
+    # Find the body of the cylinder that is connected to the lid
+    for t in filtered_lids.all():
+        cylinders.append(t.edges().ancestors("Face"))
+    #print(len(cylinders))
 
     data = []
 
-    heatstakesC = None
+    candidate_heatstakes = None
     delimitador = 10
 
-    # Por cada cilindro, calcula su centroide y agrega todas las caras dentro del radio de busqueda
-    for c in cilindros:
-        centro = centroide(c)
-        data.append(solids.faces(cq.selectors.BoxSelector((centro[0] - delimitador, centro[1] -delimitador, centro[2] -delimitador), (centro[0] + delimitador, centro[1] + delimitador, centro[2] + delimitador))))
+    # For each cylinder, calculate its centroid and add all faces within the search radius
+    for c in cylinders:
+        centroid = get_centroid(c)
+        data.append(solids.faces(cq.selectors.BoxSelector((centroid[0] - delimitador, centroid[1] -delimitador, centroid[2] -delimitador), (centroid[0] + delimitador, centroid[1] + delimitador, centroid[2] + delimitador))))
         #print(len(data))
-        #print(centro)
-        if(heatstakesC is None):
-            heatstakesC = data[-1]
+        #print(centroid)
+        if(candidate_heatstakes is None):
+            candidate_heatstakes = data[-1]
         else:
-            heatstakesC.add(data[-1])
+            candidate_heatstakes.add(data[-1])
         # Construye tu grafo
-        # for f in solids.faces(cq.selectors.BoxSelector((centro[0] - delimitador, centro[1] - delimitador, centro[2] -delimitador), (centro[0] + delimitador, centro[1] + delimitador, centro[2] + delimitador))).all():
+        # for f in solids.faces(cq.selectors.BoxSelector((centroid[0] - delimitador, centroid[1] - delimitador, centroid[2] -delimitador), (centroid[0] + delimitador, centroid[1] + delimitador, centroid[2] + delimitador))).all():
         #     for v in f.vertices().all():
         #         #grafo.add(v,f)
         #         pass
-            
-    print(time.time()-initial_time)
     print(len(data))
 
     #cuerpo = None
 
-    #for c in cilindros:
+    #for c in cylinders:
     #    if(cuerpo == None):
     #        cuerpo = c
     #    else:
@@ -90,4 +83,4 @@ def find_cylinders(path):
     file = "/d1_e.step"
     os.makedirs(path, exist_ok=True)
 
-    cq.exporters.export(heatstakesC, path+file)
+    cq.exporters.export(candidate_heatstakes, path+file)
