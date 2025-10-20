@@ -2,12 +2,13 @@
 # from preprocessing.OCC.create_graph import create_graphs
 #import preprocessing.utils_OCC as utils_OCC
 
-from preprocessing.CQ.find_cylinders import find_cylinders
+from preprocessing.find_cylinders import find_cylinders
+from preprocessing.create_graphs import create_graphs
 import time
 
 # CONSTANTS
-path_to_step_file = "doors/doors1.stp"  # Path to the STEP file to be processed
-box_size = 10  # mm, length from the centroid of the cylinder to the sides of the box
+PATH_TO_STEP_FILE = "doors/doors1.stp"  # Path to the STEP file to be processed
+BOX_SIZE = 10  # mm, length from the centroid of the cylinder to the sides of the box
 #radius = 20.0  # mm, radius around cylinder center to include faces
 
 
@@ -15,8 +16,13 @@ if __name__ == "__main__":
 
     # Using CadQuery (preferred)
     start_time = time.time()
-    cylinders = find_cylinders(path_to_step_file)
+    cylinders = find_cylinders(PATH_TO_STEP_FILE, BOX_SIZE)
     print(f"Found {len(cylinders)} cylinders in {time.time() - start_time:.3f} seconds")
+
+    # Create graphs
+    start_time = time.time()
+    cylinder_graphs = create_graphs(cylinders)
+    print(f"Created {len(cylinder_graphs)} graphs in {time.time() - start_time:.3f} seconds")
 
     # Using PythonOCC (probably deprecated)
 

@@ -1,6 +1,6 @@
 import cadquery as cq
 import os
-from ..utils_CQ import get_centroid
+from utils import get_centroid
 
 def find_cylinders(path, box_size=10):
     # Full Model
@@ -56,25 +56,9 @@ def find_cylinders(path, box_size=10):
             heatstakes_workplane = possible_heatstakes[-1]
         else:
             heatstakes_workplane.add(possible_heatstakes[-1])
-        # Construye tu grafo
-        # for f in solids.faces(cq.selectors.BoxSelector((centroid[0] - delimitador, centroid[1] - delimitador, centroid[2] -delimitador), (centroid[0] + delimitador, centroid[1] + delimitador, centroid[2] + delimitador))).all():
-        #     for v in f.vertices().all():
-        #         #grafo.add(v,f)
-        #         pass
     #print(len(possible_heatstakes))
 
     return possible_heatstakes
-
-    #cuerpo = None
-
-    #for cylinder in cylinders:
-    #    if(cuerpo == None):
-    #        cuerpo = cylinder
-    #    else:
-    #        cuerpo.add(cylinder)
-
-    # Ejecuta el modelo
-    # modelo.predict(possible_heatstakes) -> 
 
 def export_heatstakes(heatstakes_workplane):
     path = "../doors/exportaciones/p7"
