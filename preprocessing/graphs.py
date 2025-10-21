@@ -13,47 +13,47 @@ def build_brep_graph(heatstake):
 
     # Vertices
     vertices = {}
-    for v in heatstake.vertices().vals():
-        vid = f"V{v.hashCode()}"
-        vertices[vid] = v
-        G.add_node(vid, type="vertex", point=v.toTuple())
+    for vertex in heatstake.vertices().vals():
+        vid = f"V{vertex.hashCode()}"
+        vertices[vid] = vertex
+        G.add_node(vid, type="vertex") # Add properties if needed like: point=vertex.toTuple() (x, y, z) coordinates
 
-    # Edges and connect to vertices
+    # Edges 
     edge_to_vertices = {}
-    for e in heatstake.edges().vals():
-        eid = f"E{e.hashCode()}"
-        length = e.Length()
-        G.add_node(eid, type="edge", length=length)
+    for edge in heatstake.edges().vals():
+        eid = f"E{edge.hashCode()}"
+        G.add_node(eid, type="edge") 
 
-        ev_ids = [f"V{vv.hashCode()}" for vv in e.Vertices()]
+        # Edge-Vertex adjacency
+        ev_ids = [f"V{vertex.hashCode()}" for vertex in edge.Vertices()]
         edge_to_vertices[eid] = ev_ids
         for vid in ev_ids:
             if vid in G.nodes:
-                G.add_edge(eid, vid)  # edge-vertex adjacency
+                G.add_edge(eid, vid)
 
-    # Faces and connect to edges and vertices
+    # Faces 
     face_to_edges = {}
     face_to_vertices = {}
-    for f in heatstake.faces().vals():
-        fid = f"F{f.hashCode()}"
-        G.add_node(fid, type="face", area=f.Area())
+    for face in heatstake.faces().vals():
+        fid = f"F{face.hashCode()}"
+        G.add_node(fid, type="face") # Add properties if needed like: area=face.Area()
 
-        # Face -> edges
-        fe_ids = [f"E{e.hashCode()}" for e in f.Edges()]
+        # Face-Edges adjacency
+        fe_ids = [f"E{e.hashCode()}" for e in face.Edges()]
         face_to_edges[fid] = fe_ids
         for eid in fe_ids:
             if eid in G.nodes:
-                G.add_edge(fid, eid)  # face-edge adjacency
+                G.add_edge(fid, eid)
 
-        # Face -> vertices (union of edge vertices)
+        # Face-Vertices adjacency
         fv_ids = set()
-        for e in f.Edges():
-            for vv in e.Vertices():
-                fv_ids.add(f"V{vv.hashCode()}")
+        for edge in face.Edges():
+            for vertex in edge.Vertices():
+                fv_ids.add(f"V{vertex.hashCode()}")
         face_to_vertices[fid] = fv_ids
         for vid in fv_ids:
             if vid in G.nodes:
-                G.add_edge(fid, vid)  # face-vertex adjacency
+                G.add_edge(fid, vid)
 
     return G
 
