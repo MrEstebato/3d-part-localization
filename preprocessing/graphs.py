@@ -1,13 +1,13 @@
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
+import torch
+from torch_geometric.utils import from_networkx
 
 def create_graphs(cylinders):
     graphs = []
     for cylinder in cylinders:
-        cylinder_brep = build_brep_graph(cylinder)
-        encode_brep_features(cylinder_brep)
-        graphs.append(cylinder_brep)
+        graphs.append(build_brep_graph(cylinder))
     return graphs
 
 def build_brep_graph(heatstake):
@@ -59,19 +59,37 @@ def build_brep_graph(heatstake):
 
     return G
 
-def encode_brep_features(G):
-    type_encoding = {"vertex": [1, 0, 0], "edge": [0, 1, 0], "face": [0, 0, 1]}
+def encode_graphs(graphs):
+    type_encoding = {
+        "vertex": np.array([1, 0, 0], dtype=np.float32),
+        "edge":   np.array([0, 1, 0], dtype=np.float32),
+        "face":   np.array([0, 0, 1], dtype=np.float32)
+    }
+    
+    for G in graphs:
+        node_features = []
+        for node_id in G.nodes():
+            node_type = G.nodes[node_id].get("type", "vertex")
+            node_features.append(type_encoding[node_type])
+        
+        features_array = np.array(node_features, dtype=np.float32)
+        G.graph["x"] = features_array
+    
+    return graphs
 
-    for n, attrs in G.nodes(data=True):
-        node_type = attrs.get("type", "vertex")
-        features = type_encoding[node_type]
-        G.nodes[n]["x"] = np.array(features, dtype=np.float32)
+def transform_to_PyG(graphs):
+    pyg_graphs = []
+    for G in graphs:
+        pyg_graph = from_networkx(G)
+        pyg_graph.x = torch.from_numpy(G.graph["x"])
+        pyg_graphs.append(pyg_graph)
+    return pyg_graphs
 
 def plot_graph(G: nx.Graph, with_labels=False, figsize=(9, 9)):
     """
     layout: 'spring' | 'kamada' | 'circular' | 'random'
     """
-    pos = nx.spring_layout(G, seed=42)
+    pos = nx.spring_layout(G, seed=64)
 
     v_nodes = [n for n, d in G.nodes(data=True) if d.get("type") == "vertex"]
     e_nodes = [n for n, d in G.nodes(data=True) if d.get("type") == "edge"]
