@@ -60,12 +60,14 @@ def build_brep_graph(heatstake):
     return G
 
 def encode_graphs(graphs):
+    # One-Hot Encoding 
     type_encoding = {
         "vertex": np.array([1, 0, 0], dtype=np.float32),
         "edge":   np.array([0, 1, 0], dtype=np.float32),
         "face":   np.array([0, 0, 1], dtype=np.float32)
     }
     
+    # 
     for G in graphs:
         node_features = []
         for node_id in G.nodes():
@@ -80,6 +82,7 @@ def encode_graphs(graphs):
 def transform_to_PyG(graphs):
     pyg_graphs = []
     for G in graphs:
+        # Transform from networkx to torch.Data, necessary for torch GCN
         pyg_graph = from_networkx(G)
         pyg_graph.x = torch.from_numpy(G.graph["x"])
         pyg_graphs.append(pyg_graph)
