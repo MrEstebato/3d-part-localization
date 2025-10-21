@@ -5,7 +5,9 @@ import matplotlib.pyplot as plt
 def create_graphs(cylinders):
     graphs = []
     for cylinder in cylinders:
-        graphs.append(build_brep_graph(cylinder))
+        cylinder_brep = build_brep_graph(cylinder)
+        encode_brep_features(cylinder_brep)
+        graphs.append(cylinder_brep)
     return graphs
 
 def build_brep_graph(heatstake):
@@ -56,6 +58,14 @@ def build_brep_graph(heatstake):
                 G.add_edge(fid, vid)
 
     return G
+
+def encode_brep_features(G):
+    type_encoding = {"vertex": [1, 0, 0], "edge": [0, 1, 0], "face": [0, 0, 1]}
+
+    for n, attrs in G.nodes(data=True):
+        node_type = attrs.get("type", "vertex")
+        features = type_encoding[node_type]
+        G.nodes[n]["x"] = np.array(features, dtype=np.float32)
 
 def plot_graph(G: nx.Graph, with_labels=False, figsize=(9, 9)):
     """
