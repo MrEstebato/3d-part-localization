@@ -2,12 +2,12 @@
 # from preprocessing.OCC.create_graph import create_graphs
 #import preprocessing.utils_OCC as utils_OCC
 
-from preprocessing.find_cylinders import find_cylinders
-from preprocessing.create_graphs import create_graphs
+from preprocessing.cylinders import find_cylinders
+from preprocessing.graphs import create_graphs, plot_graph
 import time
 
 # CONSTANTS
-PATH_TO_STEP_FILE = "doors/doors1.stp"  # Path to the STEP file to be processed
+PATH_TO_STEP_FILE = "doors/heatstake_solo.STEP"  # Path to the STEP file to be processed
 BOX_SIZE = 10  # mm, length from the centroid of the cylinder to the sides of the box
 #radius = 20.0  # mm, radius around cylinder center to include faces
 
@@ -23,6 +23,8 @@ if __name__ == "__main__":
     start_time = time.time()
     cylinder_graphs = create_graphs(cylinders)
     print(f"Created {len(cylinder_graphs)} graphs in {time.time() - start_time:.3f} seconds")
+
+    plot_graph(cylinder_graphs[0])
 
     # Using PythonOCC (probably deprecated)
 

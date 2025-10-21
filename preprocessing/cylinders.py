@@ -1,6 +1,6 @@
 import cadquery as cq
 import os
-from utils import get_centroid
+from preprocessing.utils import get_centroid
 
 def find_cylinders(path, box_size=10):
     # Full Model
