@@ -1,9 +1,9 @@
 # from preprocessing.OCC.get_cylinders import get_cylinders
 # from preprocessing.OCC.create_graph import create_graphs
-#import preprocessing.utils_OCC as utils_OCC
+# import preprocessing.utils_OCC as utils_OCC
 
 from preprocessing.cylinders import find_cylinders
-from preprocessing.graphs import create_graphs, plot_graph, encode_graphs, transform_to_PyG
+from preprocessing.graphs import create_graphs, plot_graph, nx_to_PyG
 import time
 
 # CONSTANTS
@@ -20,16 +20,19 @@ if __name__ == "__main__":
     # Create graphs
     start_time = time.time()
     cylinder_graphs = create_graphs(cylinders)
-    print(f"Created {len(cylinder_graphs)} graphs in {time.time() - start_time:.3f} seconds")
+    print(
+        f"Created {len(cylinder_graphs)} graphs in {time.time() - start_time:.3f} seconds"
+    )
 
     plot_graph(cylinder_graphs[0])
 
     # Process Data to insert into GCN
     start_time = time.time()
-    encoded_graphs = encode_graphs(cylinder_graphs)
-    PyG_graphs = transform_to_PyG(encoded_graphs)
-    print(f"Encoded and converted graphs to PyG format in {time.time() - start_time:.3f} seconds")
-    
+    PyG_graphs = nx_to_PyG(cylinder_graphs)
+    print(
+        f"Encoded and converted graphs to PyG format in {time.time() - start_time:.3f} seconds"
+    )
+
     print(PyG_graphs[0])
 
     # TODO Load pre-trained GCN model
