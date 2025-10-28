@@ -1,5 +1,7 @@
+import torch
 from preprocessing.cylinders import find_cylinders
 from preprocessing.graphs import create_graphs, plot_graph, nx_to_PyG
+from GCN.GCN import GCN
 import time
 
 # CONSTANTS
@@ -11,7 +13,7 @@ if __name__ == "__main__":
     # Find cylinders in the STEP file
     start_time = time.time()
     print("Finding cylinders...")
-    cylinders = find_cylinders(PATH_TO_STEP_FILE, BOX_SIZE)
+    cylinder_coords, cylinders = find_cylinders(PATH_TO_STEP_FILE, BOX_SIZE)
     print(f"Found {len(cylinders)} cylinders in {time.time() - start_time:.3f} seconds")
 
     # Create graphs
@@ -22,8 +24,8 @@ if __name__ == "__main__":
         f"Created {len(cylinder_graphs)} graphs in {time.time() - start_time:.3f} seconds"
     )
 
-    print("Plotting graph...")
-    plot_graph(cylinder_graphs[0])
+    # print("Plotting graph...")
+    # plot_graph(cylinder_graphs[0])
 
     # Process Data to insert into GCN
     start_time = time.time()
@@ -35,10 +37,36 @@ if __name__ == "__main__":
 
     print(PyG_graphs[0])
 
-    # TODO Load pre-trained GCN model
+    # Load pre-trained GCN model
+    print("Loading pre-trained GCN model...")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = GCN(
+        feature_dim_size=PyG_graphs[0].num_node_features, num_classes=2, dropout=0.5
+    ).to(device)
 
-    # TODO Insert each graph into gcn to tell whether it is or not a heatstake
+    state_dict = torch.load("GCN/heatstake_classifier.pth", map_location=device)
+    model.load_state_dict(state_dict)
+    model.eval()
+    print("Model loaded.")
 
-    # TODO Get the correct centroid coordenates for the heatstakes
+    # Insert each graph into GCN to tell whether it is or not a heatstake
+    start_time = time.time()
+    heatstake_coords = []
+    for i, graph in enumerate(PyG_graphs):
+        with torch.no_grad():
+            graph = graph.to(device)  # move x and edge_index to the model's device
+            out = model(adj=graph.edge_index, features=graph.x)
+            predicted_class = out.argmax(dim=1).item()
+            if predicted_class == 1:
+                print(f"Graph {i} is classified as a heatstake.")
+                heatstake_coords.append(cylinder_coords[i])
+            else:
+                print(f"Graph {i} is NOT classified as a heatstake.")
+    cylinder_coords = heatstake_coords
+
+    print(f"Classified graphs in {time.time() - start_time:.3f} seconds")
+    print(f"Number of heatstake coordinates: {len(heatstake_coords)}")
+
+    # TODO Get the correct centroid coordinates for the heatstakes
 
     # TODO Put all coordinates in a csv

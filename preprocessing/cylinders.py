@@ -44,6 +44,7 @@ def find_cylinders(path, box_size=10):
     # print(len(cylinders))
 
     possible_heatstakes = []
+    possible_heatstakes_coords = []
 
     heatstakes_workplane = None
 
@@ -68,13 +69,15 @@ def find_cylinders(path, box_size=10):
         )
         # print(len(possible_heatstakes))
         # print(centroid)
+        possible_heatstakes_coords.append(centroid)
+
         if heatstakes_workplane is None:
             heatstakes_workplane = possible_heatstakes[-1]
         else:
             heatstakes_workplane.add(possible_heatstakes[-1])
     # print(len(possible_heatstakes))
 
-    return possible_heatstakes
+    return possible_heatstakes_coords, possible_heatstakes
 
 
 def export_heatstakes(
