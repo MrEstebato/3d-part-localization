@@ -1,6 +1,6 @@
 import cadquery as cq
 import os
-from preprocessing.utils import get_centroid
+from preprocessing.utils import get_centroid, PrintPercentage
 
 
 def find_cylinders(path, box_size=10):
@@ -49,6 +49,8 @@ def find_cylinders(path, box_size=10):
     heatstakes_workplane = None
 
     # For each cylinder, calculate its centroid and add all faces within the search box
+    printer = PrintPercentage(len(filtered_lids.all()))
+    i = 0
     for cylinder in cylinders:
         centroid = get_centroid(cylinder)
         possible_heatstakes.append(
@@ -75,6 +77,8 @@ def find_cylinders(path, box_size=10):
             heatstakes_workplane = possible_heatstakes[-1]
         else:
             heatstakes_workplane.add(possible_heatstakes[-1])
+        printer.print(i)
+        i += 1
     # print(len(possible_heatstakes))
 
     return possible_heatstakes_coords, possible_heatstakes
