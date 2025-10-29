@@ -68,13 +68,14 @@ def encode_graphs(graphs):
         "vertex": np.array([1, 0, 0], dtype=np.float32),
         "edge": np.array([0, 1, 0], dtype=np.float32),
         "face": np.array([0, 0, 1], dtype=np.float32),
+        "other": np.array([0, 0, 0], dtype=np.float32),
     }
 
     for G in graphs:
         node_features = []
         for node_id, attrs in G.nodes(data=True):
             node_type = attrs.get("type", "vertex")
-            one_hot = type_encoding.get(node_type, type_encoding["vertex"])
+            one_hot = type_encoding.get(node_type, type_encoding["other"])
 
             # Vertex coordinates (present for vertices)
             pt = attrs.get("point", None)
