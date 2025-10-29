@@ -84,3 +84,63 @@ class GCN(nn.Module):
         scores = self.scoring_layer(scores)
         score = F.log_softmax(scores, dim=1)
         return score
+
+
+class GCN2(nn.Module):
+    def __init__(
+        self,
+        feature_dim_size,
+        num_classes,
+        hidden_dim=64,
+        num_layers=3,
+        dropout=0.3,
+        use_residual=True,
+    ):
+        super(GCN2, self).__init__()
+
+        assert num_layers >= 1, "num_layers must be >= 1"
+
+        self.num_classes = num_classes
+        self.dropout = dropout
+        self.use_residual = use_residual
+
+        # Convolution stack
+        self.convs = nn.ModuleList()
+        self.norms = nn.ModuleList()
+
+        in_dim = feature_dim_size
+        for i in range(num_layers):
+            out_dim = hidden_dim
+            self.convs.append(GCNConv(in_channels=in_dim, out_channels=out_dim))
+            self.norms.append(nn.LayerNorm(out_dim))
+            in_dim = out_dim
+
+        pooled_dim = 2 * hidden_dim
+
+        # Classifier head
+        mid = max(pooled_dim // 2, 32)
+        self.classifier = nn.Sequential(
+            nn.Linear(pooled_dim, mid),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(mid, num_classes),
+        )
+
+    def forward(self, adj, features):
+        h = features
+        for conv, norm in zip(self.convs, self.norms):
+            h_in = h
+            h = conv(h, adj)  # GCN layer
+            h = norm(h)  # normalization
+            h = F.relu(h)
+            h = F.dropout(h, p=self.dropout, training=self.training)
+            if self.use_residual and h.shape == h_in.shape:
+                h = h + h_in  # residual
+
+        # Global pooling over nodes
+        h_mean = h.mean(dim=0)
+        h_max = h.max(dim=0).values
+        graph_repr = torch.cat([h_mean, h_max], dim=0).unsqueeze(0)  # [1, 2*hidden_dim]
+
+        logits = self.classifier(graph_repr)
+        return F.log_softmax(logits, dim=1)

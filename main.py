@@ -1,7 +1,7 @@
 import torch
 from preprocessing.cylinders import find_cylinders
 from preprocessing.graphs import create_graphs, plot_graph, nx_to_PyG
-from GCN.GCN import GCN
+from GCN.GCN import GCN2
 import time
 
 # CONSTANTS
@@ -23,6 +23,9 @@ if __name__ == "__main__":
     print(
         f"Created {len(cylinder_graphs)} graphs in {time.time() - start_time:.3f} seconds"
     )
+    print(
+        f"Example graph has {cylinder_graphs[0].number_of_nodes()} nodes and {cylinder_graphs[0].number_of_edges()} edges"
+    )
 
     # print("Plotting graph...")
     # plot_graph(cylinder_graphs[0])
@@ -40,11 +43,13 @@ if __name__ == "__main__":
     # Load pre-trained GCN model
     print("Loading pre-trained GCN model...")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = GCN(
-        feature_dim_size=PyG_graphs[0].num_node_features, num_classes=2, dropout=0.5
+    model = GCN2(
+        feature_dim_size=PyG_graphs[0].num_node_features, num_classes=2, dropout=0.3
     ).to(device)
 
-    state_dict = torch.load("GCN/heatstake_classifier.pth", map_location=device)
+    state_dict = torch.load(
+        "GCN/heatstake_classifier.pth", map_location=device, weights_only=False
+    )
     model.load_state_dict(state_dict)
     model.eval()
     print("Model loaded.")

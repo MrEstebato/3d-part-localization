@@ -20,9 +20,7 @@ def build_brep_graph(heatstake):
     for vertex in heatstake.vertices().vals():
         vid = f"V{vertex.hashCode()}"
         vertices[vid] = vertex
-        G.add_node(
-            vid, type="vertex"
-        )  # Add properties if needed like: point=vertex.toTuple() (x, y, z) coordinates
+        G.add_node(vid, type="vertex", point=vertex.toTuple())
 
     # Edges
     edge_to_vertices = {}
@@ -42,7 +40,7 @@ def build_brep_graph(heatstake):
     face_to_vertices = {}
     for face in heatstake.faces().vals():
         fid = f"F{face.hashCode()}"
-        G.add_node(fid, type="face")  # Add properties if needed like: area=face.Area()
+        G.add_node(fid, type="face", area=face.Area(), center=face.Center().toTuple())
 
         # Face-Edges adjacency
         fe_ids = [f"E{e.hashCode()}" for e in face.Edges()]
@@ -74,11 +72,35 @@ def encode_graphs(graphs):
 
     for G in graphs:
         node_features = []
-        for node_id in G.nodes():
-            node_type = G.nodes[node_id].get("type", "vertex")
-            node_features.append(type_encoding[node_type])
+        for node_id, attrs in G.nodes(data=True):
+            node_type = attrs.get("type", "vertex")
+            one_hot = type_encoding.get(node_type, type_encoding["vertex"])
 
-        features_array = np.array(node_features, dtype=np.float32)
+            # Vertex coordinates (present for vertices)
+            pt = attrs.get("point", None)
+            if pt is None:
+                v_coords = np.array([0.0, 0.0, 0.0], dtype=np.float32)
+            else:
+                v_coords = np.array(pt, dtype=np.float32)
+
+            # Face center (present for faces)
+            ctr = attrs.get("center", None)
+            if ctr is None:
+                c_coords = np.array([0.0, 0.0, 0.0], dtype=np.float32)
+            else:
+                c_coords = np.array(ctr, dtype=np.float32)
+
+            # Face area (present for faces)
+            ar = attrs.get("area", None)
+            if ar is None:
+                area_val = np.array([0.0], dtype=np.float32)
+            else:
+                area_val = np.array([float(ar)], dtype=np.float32)
+
+            feat = np.concatenate([one_hot, v_coords, c_coords, area_val], axis=0)
+            node_features.append(feat)
+
+        features_array = np.vstack(node_features).astype(np.float32)
         G.graph["x"] = features_array
 
     return graphs
