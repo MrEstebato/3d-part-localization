@@ -1,8 +1,9 @@
 import torch
 from preprocessing.cylinders import find_cylinders
 from preprocessing.graphs import create_graphs, plot_graph, nx_to_PyG
-from GCN.GCN import GCN2
+from GCN.GCN import GCN2, GCN3
 import time
+import csv
 
 # CONSTANTS
 PATH_TO_STEP_FILE = "doors/doors1.stp"  # Path to the STEP file to be processed
@@ -10,6 +11,7 @@ BOX_SIZE = 10  # mm, length from the centroid of the cylinder to the sides of th
 
 if __name__ == "__main__":
 
+    main_start_time = time.time()
     # Find cylinders in the STEP file
     start_time = time.time()
     print("Finding cylinders...")
@@ -23,9 +25,8 @@ if __name__ == "__main__":
     print(
         f"Created {len(cylinder_graphs)} graphs in {time.time() - start_time:.3f} seconds"
     )
-    print(
-        f"Example graph has {cylinder_graphs[0].number_of_nodes()} nodes and {cylinder_graphs[0].number_of_edges()} edges"
-    )
+    for g in cylinder_graphs:
+        print(f"Graph has {g.number_of_nodes()} nodes and {g.number_of_edges()} edges")
 
     # print("Plotting graph...")
     # plot_graph(cylinder_graphs[0])
@@ -41,12 +42,10 @@ if __name__ == "__main__":
     # Load pre-trained GCN model
     print("Loading pre-trained GCN model...")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = GCN2(
-        feature_dim_size=PyG_graphs[0].num_node_features, num_classes=2, dropout=0.3
-    ).to(device)
+    model = GCN3(feature_dim_size=PyG_graphs[0].num_node_features).to(device)
 
     state_dict = torch.load(
-        "GCN/heatstake_classifier.pth", map_location=device, weights_only=False
+        "GCN/heatstake_classifier3.pth", map_location=device, weights_only=False
     )
     model.load_state_dict(state_dict)
     model.eval()
@@ -72,4 +71,15 @@ if __name__ == "__main__":
 
     # TODO Get the correct centroid coordinates for the heatstakes
 
-    # TODO Put all coordinates in a csv
+    # Put all coordinates in a csv
+    print("Writing into csv...")
+    with open("heatstake_coordinates.csv", mode="w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["X", "Y", "Z"])
+        for coord in heatstake_coords:
+            writer.writerow(coord)
+
+    print(f'Wrote {len(heatstake_coords)} coordinates into "heatstake_coordinates.csv"')
+
+    total_time = time.time() - main_start_time
+    print(f"Total time taken: {total_time:.3f} seconds | {total_time%60:.3f} minutes")
