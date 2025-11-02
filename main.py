@@ -38,8 +38,6 @@ if __name__ == "__main__":
         f"Encoded and converted graphs to PyG format in {time.time() - start_time:.3f} seconds"
     )
 
-    print(PyG_graphs[0])
-
     # Load pre-trained GCN model
     print("Loading pre-trained GCN model...")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
