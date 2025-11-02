@@ -74,7 +74,7 @@ def encode_graphs(graphs):
     for G in graphs:
         node_features = []
         for node_id, attrs in G.nodes(data=True):
-            node_type = attrs.get("type", "vertex")
+            node_type = attrs.get("type", "other")
             one_hot = type_encoding.get(node_type, type_encoding["other"])
 
             # Vertex coordinates (present for vertices)
@@ -111,8 +111,12 @@ def nx_to_PyG(graphs):
     encode_graphs(graphs)
     pyg_graphs = []
     for G in graphs:
-        pyg_graph = from_networkx(G)
-        pyg_graph.x = torch.from_numpy(G.graph["x"])
+        H = nx.Graph()
+        H.add_nodes_from(G.nodes())
+        H.add_edges_from(G.edges())
+
+        pyg_graph = from_networkx(H)
+        pyg_graph.x = torch.from_numpy(G.graph["x"]).contiguous()
         pyg_graphs.append(pyg_graph)
     return pyg_graphs
 
