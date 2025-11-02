@@ -7,7 +7,7 @@ import csv
 
 # CONSTANTS
 PATH_TO_STEP_FILE = "doors/doors1.stp"  # Path to the STEP file to be processed
-BOX_SIZE = 10  # mm, length from the centroid of the cylinder to the sides of the box
+BOX_SIZE = 20  # mm, length from the centroid of the cylinder to the sides of the box
 
 if __name__ == "__main__":
 
@@ -82,4 +82,4 @@ if __name__ == "__main__":
     print(f'Wrote {len(heatstake_coords)} coordinates into "heatstake_coordinates.csv"')
 
     total_time = time.time() - main_start_time
-    print(f"Total time taken: {total_time:.3f} seconds | {total_time%60:.3f} minutes")
+    print(f"Total time taken: {total_time:.3f} seconds | {total_time/60:.3f} minutes")
