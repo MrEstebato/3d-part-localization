@@ -87,60 +87,167 @@ class GCN(nn.Module):
 
 
 class GCN2(nn.Module):
-    def __init__(
-        self,
-        feature_dim_size,
-        num_classes,
-        hidden_dim=64,
-        num_layers=3,
-        dropout=0.3,
-        use_residual=True,
-    ):
+    def __init__(self, feature_dim_size, num_classes, dropout):
         super(GCN2, self).__init__()
-
-        assert num_layers >= 1, "num_layers must be >= 1"
 
         self.num_classes = num_classes
         self.dropout = dropout
-        self.use_residual = use_residual
 
-        # Convolution stack
-        self.convs = nn.ModuleList()
-        self.norms = nn.ModuleList()
+        self.hidden_dim = 64
 
-        in_dim = feature_dim_size
-        for i in range(num_layers):
-            out_dim = hidden_dim
-            self.convs.append(GCNConv(in_channels=in_dim, out_channels=out_dim))
-            self.norms.append(nn.LayerNorm(out_dim))
-            in_dim = out_dim
+        self.conv1 = GCNConv(in_channels=feature_dim_size, out_channels=self.hidden_dim)
+        self.norm1 = nn.LayerNorm(self.hidden_dim)
 
-        pooled_dim = 2 * hidden_dim
+        self.conv2 = GCNConv(in_channels=self.hidden_dim, out_channels=self.hidden_dim)
+        self.norm2 = nn.LayerNorm(self.hidden_dim)
 
-        # Classifier head
-        mid = max(pooled_dim // 2, 32)
-        self.classifier = nn.Sequential(
-            nn.Linear(pooled_dim, mid),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(mid, num_classes),
-        )
+        self.conv3 = GCNConv(in_channels=self.hidden_dim, out_channels=self.hidden_dim)
+        self.norm3 = nn.LayerNorm(self.hidden_dim)
+
+        pooled_dim = 2 * self.hidden_dim
+        self.fc1 = nn.Linear(pooled_dim, 64)
+        self.fc2 = nn.Linear(64, num_classes)
 
     def forward(self, adj, features):
-        h = features
-        for conv, norm in zip(self.convs, self.norms):
-            h_in = h
-            h = conv(h, adj)  # GCN layer
-            h = norm(h)  # normalization
-            h = F.relu(h)
-            h = F.dropout(h, p=self.dropout, training=self.training)
-            if self.use_residual and h.shape == h_in.shape:
-                h = h + h_in  # residual
+        # Layer 1
+        h = self.conv1(features, adj)
+        h = self.norm1(h)
+        h = F.relu(h)
+        h = F.dropout(h, p=self.dropout, training=self.training)
 
-        # Global pooling over nodes
+        # Layer 2 with residual
+        h_in = h
+        h = self.conv2(h, adj)
+        h = self.norm2(h)
+        h = F.relu(h)
+        h = F.dropout(h, p=self.dropout, training=self.training)
+        h = h + h_in
+
+        # Layer 3 with residual
+        h_in = h
+        h = self.conv3(h, adj)
+        h = self.norm3(h)
+        h = F.relu(h)
+        h = F.dropout(h, p=self.dropout, training=self.training)
+        h = h + h_in
+
         h_mean = h.mean(dim=0)
         h_max = h.max(dim=0).values
-        graph_repr = torch.cat([h_mean, h_max], dim=0).unsqueeze(0)  # [1, 2*hidden_dim]
+        graph_repr = torch.cat([h_mean, h_max], dim=0).unsqueeze(0)
 
-        logits = self.classifier(graph_repr)
-        return F.log_softmax(logits, dim=1)
+        out = F.relu(self.fc1(graph_repr))
+        out = F.dropout(out, p=self.dropout, training=self.training)
+        logits = self.fc2(out)
+
+        # return F.log_softmax(logits, dim=1)
+        return logits
+
+
+class GCN3(nn.Module):
+    def __init__(self, feature_dim_size, num_classes=2, dropout=0.3):
+        super(GCN3, self).__init__()
+
+        self.num_classes = num_classes
+        self.dropout = dropout
+
+        self.conv1 = GCNConv(in_channels=feature_dim_size, out_channels=64)
+        self.norm1 = nn.LayerNorm(64)
+
+        self.conv2 = GCNConv(in_channels=64, out_channels=32)
+        self.norm2 = nn.LayerNorm(32)
+
+        self.conv3 = GCNConv(in_channels=32, out_channels=32)
+        self.norm3 = nn.LayerNorm(32)
+
+        pooled_dim = 2 * 32  # mean + max pooling
+        self.fc1 = nn.Linear(pooled_dim, 64)
+        self.fc2 = nn.Linear(64, num_classes)
+
+    def forward(self, adj, features):
+        # Layer 1
+        h = self.conv1(features, adj)
+        h = self.norm1(h)
+        h = F.relu(h)
+        h = F.dropout(h, p=self.dropout, training=self.training)
+
+        # Layer 2
+        h = self.conv2(h, adj)
+        h = self.norm2(h)
+        h = F.relu(h)
+        h = F.dropout(h, p=self.dropout, training=self.training)
+
+        # Layer 3
+        h_in = h
+        h = self.conv3(h, adj)
+        h = self.norm3(h)
+        h = F.relu(h)
+        h = F.dropout(h, p=self.dropout, training=self.training)
+        h = h + h_in
+
+        # Global pooling
+        h_mean = h.mean(dim=0)
+        h_max = h.max(dim=0).values
+        graph_repr = torch.cat([h_mean, h_max], dim=0).unsqueeze(0)
+
+        # Classifier
+        out = F.relu(self.fc1(graph_repr))
+        out = F.dropout(out, p=self.dropout, training=self.training)
+        logits = self.fc2(out)
+
+        # return F.log_softmax(logits, dim=1)
+        return logits
+
+
+class GCN3(nn.Module):
+    def __init__(self, feature_dim_size, num_classes=2, dropout=0.3):
+        super(GCN3, self).__init__()
+
+        self.num_classes = num_classes
+        self.dropout = dropout
+
+        self.conv1 = GCNConv(in_channels=feature_dim_size, out_channels=64)
+        self.norm1 = nn.LayerNorm(64)
+
+        self.conv2 = GCNConv(in_channels=64, out_channels=32)
+        self.norm2 = nn.LayerNorm(32)
+
+        self.conv3 = GCNConv(in_channels=32, out_channels=32)
+        self.norm3 = nn.LayerNorm(32)
+
+        pooled_dim = 2 * 32  # mean + max pooling
+        self.fc1 = nn.Linear(pooled_dim, 64)
+        self.fc2 = nn.Linear(64, num_classes)
+
+    def forward(self, adj, features):
+        # Layer 1
+        h = self.conv1(features, adj)
+        h = self.norm1(h)
+        h = F.relu(h)
+        h = F.dropout(h, p=self.dropout, training=self.training)
+
+        # Layer 2
+        h = self.conv2(h, adj)
+        h = self.norm2(h)
+        h = F.relu(h)
+        h = F.dropout(h, p=self.dropout, training=self.training)
+
+        # Layer 3
+        h_in = h
+        h = self.conv3(h, adj)
+        h = self.norm3(h)
+        h = F.relu(h)
+        h = F.dropout(h, p=self.dropout, training=self.training)
+        h = h + h_in
+
+        # Global pooling
+        h_mean = h.mean(dim=0)
+        h_max = h.max(dim=0).values
+        graph_repr = torch.cat([h_mean, h_max], dim=0).unsqueeze(0)
+
+        # Classifier
+        out = F.relu(self.fc1(graph_repr))
+        out = F.dropout(out, p=self.dropout, training=self.training)
+        logits = self.fc2(out)
+
+        # return F.log_softmax(logits, dim=1)
+        return logits
