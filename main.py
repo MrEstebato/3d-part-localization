@@ -6,13 +6,13 @@ import time
 import csv
 
 # CONSTANTS
-PATH_TO_STEP_FILE = "doors/doors1.stp"  # Path to the STEP file to be processed
+PATH_TO_STEP_FILE = "doors/doors2.stp"  # Path to the STEP file to be processed
 BOX_SIZE = 20  # mm, length from the centroid of the cylinder to the sides of the box
 
 if __name__ == "__main__":
 
     main_start_time = time.time()
-    # Find cylinders in the STEP file
+    # Find cylinders in the STEP fi1le
     start_time = time.time()
     print("Finding cylinders...")
     cylinder_coords, cylinders = find_cylinders(PATH_TO_STEP_FILE, BOX_SIZE)
@@ -77,9 +77,11 @@ if __name__ == "__main__":
         writer = csv.writer(file)
         writer.writerow(["X", "Y", "Z"])
         for coord in heatstake_coords:
-            writer.writerow(coord)
+            writer.writerow(
+                [round(coord[0], 4), round(coord[1], 4), round(coord[2], 4)]
+            )
 
     print(f'Wrote {len(heatstake_coords)} coordinates into "heatstake_coordinates.csv"')
 
     total_time = time.time() - main_start_time
-    print(f"Total time taken: {total_time:.3f} seconds | {total_time/60:.3f} minutes")
+    print(f"Total time taken: {total_time/60:.0f}:{total_time%60:.0f} minutes")
