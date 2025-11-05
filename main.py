@@ -6,7 +6,7 @@ import time
 import csv
 
 # CONSTANTS
-PATH_TO_STEP_FILE = "doors/doors2.stp"  # Path to the STEP file to be processed
+PATH_TO_STEP_FILE = "doors/doors1.stp"  # Path to the STEP file to be processed
 BOX_SIZE = 20  # mm, length from the centroid of the cylinder to the sides of the box
 
 if __name__ == "__main__":
