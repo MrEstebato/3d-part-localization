@@ -12,7 +12,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForCausalLM.from_pretrained(model_name)
 
 # Define your input prompt
-prompt = "This is a test"
+prompt = "def hello_world():"
 
 # Encode the prompt
 inputs = tokenizer(prompt, return_tensors="pt")
