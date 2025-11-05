@@ -1,0 +1,1212 @@
+{
+  "name": "File_Chatbot",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3072,
+        960
+      ],
+      "id": "8f90b642-8490-4e08-b63a-c2ac674ef7a8",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MzZoThrZqexLtwYC",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "upload file",
+        "options": {
+          "allowFileUploads": true,
+          "showWelcomeScreen": false,
+          "responseMode": "lastNode"
+        }
+      },
+      "id": "be74c019-3068-47fd-816c-c12b2e357c37",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        1744,
+        848
+      ],
+      "webhookId": "1c1f408c-25b5-4776-a3cf-da267611b299"
+    },
+    {
+      "parameters": {
+        "jsCode": "let results = [];\n\nfor (item of items) {\n  for (key of Object.keys(item.binary)) {\n    results.push({\n      json: item.json.files.find(file => file.fileName === item.binary[key].fileName),\n      binary: {\n          data: item.binary[key],\n      }\n    });\n  }\n}\n\nreturn results;"
+      },
+      "id": "8cf8a04d-d89b-4f8c-bc2c-e815d18183c5",
+      "name": "Files To List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2192,
+        928
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "11a4b1e5-2065-4bfd-ba7c-12def5c65116",
+              "name": "sessionId",
+              "value": "={{ $('When chat message received').first().json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "43953933-fc55-46c0-8376-cfc357789dbb",
+              "name": "action",
+              "value": "={{ $('When chat message received').first().json.action }}",
+              "type": "string"
+            },
+            {
+              "id": "9869788e-1743-41dc-ad6d-b48a80fa86af",
+              "name": "chatInput",
+              "value": "={{ $('When chat message received').first().json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "d2834c08-396e-4735-a919-05a46109c311",
+              "name": "files",
+              "value": "={{ $json.files }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f4daa2a2-f288-425b-91b4-a410bef5c5df",
+      "name": "Set Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2848,
+        848
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "bcf29aab-0281-4c28-b888-3eb9c8300443",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        1744,
+        1856
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5771fb42-e4a9-44d7-8946-6bca673480c3",
+              "name": "response",
+              "value": "Unknown command. Try a different route.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "97c14970-c4b4-4ad4-9236-4473efb00a30",
+      "name": "Unknown Route",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2288,
+        2000
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "id": "7f50498f-f475-46e1-a989-d7e84e3e9ead",
+      "name": "Extract from File",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        2704,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.fileType }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "ffc1dd26-6a9a-42ab-a574-5d6d3da7025d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c0432ab1-1b11-4b47-a135-099be7fde656",
+                    "leftValue": "={{ [\"jpg\",\"jpeg\",\"png\",\"gif\"] }}",
+                    "rightValue": "={{ $json.fileType.toLowerCase() }}",
+                    "operator": {
+                      "type": "array",
+                      "operation": "contains",
+                      "rightType": "any"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "image"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "9b160387-85a1-4060-891e-def510ac81f3",
+                    "leftValue": "={{ $json.fileType }}",
+                    "rightValue": "json",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a60e1ed6-eb5d-4657-bc78-cd8350a2a1aa",
+      "name": "Handle FileType",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        2400,
+        1456
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1f677cd-31be-4383-adcf-f01eb83899d7",
+              "name": "response",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3612e9a5-f073-4af1-8091-8562e1e8e5d1",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2928,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Execute Workflow Trigger').first().json.query.question }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Answer the user's question using the contents of the pdf provided."
+            },
+            {
+              "type": "HumanMessagePromptTemplate",
+              "message": "=This is the content of the pdf:\n{{ $json.text }}"
+            }
+          ]
+        }
+      },
+      "id": "cc2b0b62-6a96-4a53-a8d9-b616249f0a54",
+      "name": "Answer from PDF Contents",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        3008,
+        1200
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1f677cd-31be-4383-adcf-f01eb83899d7",
+              "name": "response",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a817f1bd-80b3-437b-9db8-f0c96a5d128c",
+      "name": "Send Response1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3376,
+        1312
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}\n{{\n$json.files\n  ? `Here are the file locations:\n     ${$json.files.map(file => file.fileName).join('\\n')}\n    `\n  : ''\n}}",
+        "options": {
+          "systemMessage": "Answer the user's question.\n\nAll files given by the user are stored in a directory. Use the tool to query the files where relevant."
+        }
+      },
+      "id": "07b1c580-3d25-42aa-9423-1d34f162eebb",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        3152,
+        752
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1f677cd-31be-4383-adcf-f01eb83899d7",
+              "name": "response",
+              "value": "={{ $json.stdout }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "bb0cdfed-dd50-4774-b071-e6e1fab0a19c",
+      "name": "Send Response2",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2400,
+        1856
+      ]
+    },
+    {
+      "parameters": {
+        "name": "read_file_from_directory",
+        "description": "Call this tool to query the contents of a file saved in the directory. Please note that only the answer will be returned and not the file.",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{ $workflow.id }}",
+          "mode": "id"
+        },
+        "fields": {
+          "values": [
+            {
+              "name": "route",
+              "stringValue": "read_file"
+            }
+          ]
+        },
+        "specifyInputSchema": true,
+        "schemaType": "manual",
+        "inputSchema": "{\n\"type\": \"object\",\n\"properties\": {\n    \"question\": {\n      \"type\": \"string\",\n      \"description\": \"ensure this is a fully formed question\"\n    },\n\t\"filepath\": { \"type\": \"string\" }\n  }\n}"
+      },
+      "id": "3d015ebb-5302-42fb-a582-7f765430635e",
+      "name": "Read File Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        3312,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "name": "search_directory",
+        "description": "Call this tool to search over the directory listing.",
+        "workflowId": {
+          "__rl": true,
+          "value": "={{ $workflow.id }}",
+          "mode": "id"
+        },
+        "fields": {
+          "values": [
+            {
+              "name": "route",
+              "stringValue": "search_file"
+            }
+          ]
+        },
+        "specifyInputSchema": true,
+        "jsonSchemaExample": "{\n\t\"search_terms\": \"some_value\"\n}"
+      },
+      "id": "0d2ec867-0d74-4e2c-95e6-c0ac27800d9c",
+      "name": "Search File Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        3424,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.files }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "array",
+                      "operation": "notExists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "without files"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "0d67ec0a-1d61-4f6a-97e5-965b0d340ae4",
+                    "leftValue": "={{ $json.files }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "array",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "with files"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "601b6d16-9f1e-4694-a8e5-f9b25bff43ec",
+      "name": "Has Files?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1968,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "read_file",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Read File from Directory"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "2d2b7d5d-ac9b-492c-b85f-db423dce1545",
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "search_file",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "search_file"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "7aa66b1c-27d5-4ac8-af60-8d7bc05a69a8",
+      "name": "Handle Route",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1968,
+        1856
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 2. Split Files Array into Separate Items\nOnly way to split is to use the code node. This allows us to action each file separately.",
+        "height": 97.49999999999994,
+        "width": 333.74999999999994,
+        "color": 7
+      },
+      "id": "04c555ff-2cf3-40b8-b521-e74af86d669d",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1840,
+        1104
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "files",
+        "options": {}
+      },
+      "id": "29947e4e-ed8e-41ca-8f43-a3fcfbdcb404",
+      "name": "Combine",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2624,
+        928
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 3. Combine file paths using Aggregate node\nWhen returning the filepaths to the agent, we don't want them as separate items but rather just a single list to inject into the prompt.",
+        "height": 106.24999999999991,
+        "width": 363.74999999999994,
+        "color": 7
+      },
+      "id": "889d94a7-1296-4749-88e1-98a669542110",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        1104
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 1. Detect if files are included\nJust check the message before it hits the agent. You can put any number of other nodes in-between the chat trigger and AI agent.",
+        "height": 113.74999999999994,
+        "width": 333.74999999999994,
+        "color": 7
+      },
+      "id": "c7861c7d-8d8d-40c0-ab75-db26493e7bc7",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1824,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 4. Use tools to interact with the files saved to disk\nCustom workflow tools are preferred method here.",
+        "height": 107.99999999999997,
+        "width": 234.00000000000006,
+        "color": 7
+      },
+      "id": "f9c3e6f7-54e8-4c1d-88a0-2ab28e18eed3",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 5. This is an example of the subworkflow router pattern\nIt lets you have multiple subworkflow tools in one template.",
+        "height": 115,
+        "width": 277.00000000000006,
+        "color": 7
+      },
+      "id": "a2301154-dadb-4115-9368-e56f8e08e997",
+      "name": "Sticky Note4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2368,
+        1280
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### 6. Extract contents from PDF\nTo read PDFs, you'll need to use the \"Extract from File\" node to get the text. Once extracted, provide it to the prompt as context.",
+        "height": 115,
+        "width": 338.00000000000006,
+        "color": 7
+      },
+      "id": "1090511c-40da-4443-ac21-e433ee3da989",
+      "name": "Sticky Note5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3536,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ `C:/Users/santi/Desktop/Tec/7mo_Semestre_Profesional/Concentracion/Reto/n8n_Test/${$json.query.filepath}` }}",
+        "options": {}
+      },
+      "id": "7fbe0bf4-07e2-4282-abea-c96c57279170",
+      "name": "Read File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2192,
+        1552
+      ],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "content": "### 7. Extract contents from Images\nTo read images, typically the AI can read this for you without prior conversion steps. Use the binary message type for user to achieve this with n8n.",
+        "height": 112,
+        "width": 356.0000000000001,
+        "color": 7
+      },
+      "id": "1130a1e3-425a-45af-80b8-85deb63f4223",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3584,
+        1504
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### A note on Tool Design\nIdeally, you want the tool to return only the data you're looking for. Here the read file tool passes in a question alongside the filepath - this avoids the need to return the full file contents.",
+        "height": 134,
+        "width": 349
+      },
+      "id": "93b64112-dea1-4e17-ae0d-3b6c9250bb71",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        3120,
+        608
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "0de0eed3-9d5a-46b6-94b6-05dabc39bdac",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        3184,
+        960
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Execute Workflow Trigger').first().json.query.question }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Answer the user's question using the contents of the image provided."
+            },
+            {
+              "type": "HumanMessagePromptTemplate",
+              "messageType": "imageBinary"
+            }
+          ]
+        }
+      },
+      "id": "793d9f0b-4078-4591-b113-6ee9d8762420",
+      "name": "Answer from Image Contents",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        2640,
+        1520
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5f95ad92-2eab-44ec-9bd9-d5170e6607bc",
+              "name": "response",
+              "value": "File not found. Be sure to prepend the full path `/home/node/temp/...`",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c2cc647a-2498-4922-af7d-948bca7a17ae",
+      "name": "Not Found Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2400,
+        1664
+      ]
+    },
+    {
+      "parameters": {
+        "command": "=dir C:\\Users\\santi\\Desktop\\Tec\\7mo_Semestre_Profesional\\Concentracion\\Reto\\n8n_Test"
+      },
+      "id": "22200747-73ac-4c75-bdb6-e3911daa3fcc",
+      "name": "Search Directory",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2192,
+        1856
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ `C:/Users/santi/Desktop/Tec/7mo_Semestre_Profesional/Concentracion/Reto/n8n_Test/${$json.fileName}` }}",
+        "options": {}
+      },
+      "id": "7d843228-abed-4df6-b167-77014a83fd67",
+      "name": "Read/Write Files from Disk",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        928
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3088,
+        1424
+      ],
+      "id": "56d4f8c9-71d1-4386-87c9-c975ee767706",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MzZoThrZqexLtwYC",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2640,
+        1648
+      ],
+      "id": "4ccba95e-3d26-405c-b2c6-ddc69148c4f4",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MzZoThrZqexLtwYC",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "id": "942e5887-7d6a-4772-b50a-24257a8f4bf1",
+      "name": "Extract from JSON",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        2720,
+        1824
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f1f677cd-31be-4383-adcf-f01eb83899d7",
+              "name": "response",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "16112f41-cf7a-449f-a8fa-0dc190fa6119",
+      "name": "Send Response3",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3280,
+        1824
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Execute Workflow Trigger').first().json.query.question }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Answer the user's question using the contents of the pdf provided."
+            },
+            {
+              "type": "HumanMessagePromptTemplate",
+              "message": "=This is the content of the json file representation of a STEP file:\n{{ $json.text }}"
+            }
+          ]
+        }
+      },
+      "id": "b18988dd-f3d1-491a-8dff-864ca76dbbb6",
+      "name": "Answer from STEP JSON Contents",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        2944,
+        1824
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2944,
+        1984
+      ],
+      "id": "6689bed3-ac85-4e85-b51b-c88c3c529a6f",
+      "name": "Google Gemini Chat Model3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MzZoThrZqexLtwYC",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Has Files?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Files To List": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Handle Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "Answer from PDF Contents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle FileType": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Answer from Image Contents",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer from PDF Contents": {
+      "main": [
+        [
+          {
+            "node": "Send Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read File Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search File Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Files?": {
+      "main": [
+        [
+          {
+            "node": "Set Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Files To List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle Route": {
+      "main": [
+        [
+          {
+            "node": "Read File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Search Directory",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unknown Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine": {
+      "main": [
+        [
+          {
+            "node": "Set Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read File": {
+      "main": [
+        [
+          {
+            "node": "Handle FileType",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Not Found Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer from Image Contents": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Directory": {
+      "main": [
+        [
+          {
+            "node": "Send Response2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Combine",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer from PDF Contents",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer from Image Contents",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from JSON": {
+      "main": [
+        [
+          {
+            "node": "Answer from STEP JSON Contents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer from STEP JSON Contents": {
+      "main": [
+        [
+          {
+            "node": "Send Response3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer from STEP JSON Contents",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3e00bf6b-b394-4648-b13d-33caf0f7e7bb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ec87542124e08dd11e06f0cea2fbe3f319bc679cb4df055fdd5c044b5840b2a4"
+  },
+  "id": "4RbtiXRRTARPHDdK",
+  "tags": []
+}
