@@ -2,3 +2,4 @@ doors/*
 GCN/training_data/*
 __pycache__/
 **/__pycache__/
+heatstake_coordinates.csv
