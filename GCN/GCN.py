@@ -1,8 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch_geometric.nn as geom_nn
-import torch.optim as optim
-from torch_geometric.nn import GCNConv, GATConv
+from torch_geometric.nn import GCNConv
 import torch
 
 
@@ -119,10 +118,11 @@ class GCN2(nn.Module):
 class GCN3(nn.Module):
     def __init__(self, feature_dim_size, dropout=0.3):
         super().__init__()
-        self.conv1 = GCNConv(feature_dim_size, 16)
-        self.conv2 = GCNConv(16, 16)
-        self.fc1 = nn.Linear(16, 16)
-        self.out = nn.Linear(16, 2)
+        self.conv1 = GCNConv(feature_dim_size, 48)
+        self.conv2 = GCNConv(48, 48)
+        self.conv3 = GCNConv(48, 48)
+        self.fc1 = nn.Linear(96, 48)
+        self.out = nn.Linear(48, 2)
         self.dropout = dropout
 
     def forward(self, features, adj, batch):
@@ -134,7 +134,13 @@ class GCN3(nn.Module):
         x = F.relu(x)
         x = F.dropout(x, p=self.dropout, training=self.training)
 
-        x = geom_nn.global_mean_pool(x, batch)
+        x = self.conv3(x, adj)
+        x = F.relu(x)
+        x = F.dropout(x, p=self.dropout, training=self.training)
+
+        x_mean = geom_nn.global_mean_pool(x, batch)
+        x_max = geom_nn.global_max_pool(x, batch)
+        x = torch.cat([x_mean, x_max], dim=1)
 
         x = self.fc1(x)
         x = F.relu(x)
