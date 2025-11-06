@@ -6,4 +6,4 @@ with open("Carpet1.json", "r") as f:
     data = json.load(f)
 
 # Create the CadQuery model based on the JSON data
-print(data)
+print(data['metadata'])
