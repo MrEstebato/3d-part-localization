@@ -10,7 +10,7 @@ import time
 # ===============================
 # CONFIGURACIÓN DEL CLIENTE GEMINI
 # ===============================
-genai.configure(api_key="AIzaSyD1x6DsTlcnCd_B3H5DFpC3f6B0o2-mqvQ")
+genai.configure(api_key="")
 
 # Crea una función para generar modelos/chat
 def create_chat():
