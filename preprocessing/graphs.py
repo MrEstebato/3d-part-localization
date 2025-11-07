@@ -12,6 +12,15 @@ def create_graphs(cylinders):
     return graphs
 
 
+def normalize_features(graphs):
+    all_feats = np.concatenate([g.graph["x"] for g in graphs], axis=0)
+    mean = all_feats.mean(axis=0, keepdims=True)
+    std = all_feats.std(axis=0, keepdims=True) + 1e-6
+
+    for g in graphs:
+        g.graph["x"] = (g.graph["x"] - mean) / std
+
+
 def get_face_features(face):
     # type one-hot
     gtype = face.geomType()
@@ -177,6 +186,7 @@ def encode_graphs(graphs):
 
 def nx_to_PyG(graphs):
     encode_graphs(graphs)
+    normalize_features(graphs)
     pyg_graphs = []
     for G in graphs:
         H = nx.Graph()
