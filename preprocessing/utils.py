@@ -78,6 +78,8 @@ def calcAng(point):
     return ang
 
 def calcAng2Destiny(point1, point2):
+    if(point1 == [0,0]):
+        return 0, 0
     ang = math.asin(point2[1]/distance([0,0], point1))
     if(ang < 0):
         ang = 2*math.pi + ang
