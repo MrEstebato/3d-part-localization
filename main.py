@@ -5,10 +5,12 @@ from torch_geometric.loader import DataLoader
 from GCN.GCN import GCN2, GCN3
 import time
 import csv
+import numpy as np
+import networkx as nx
 
 # CONSTANTS
 PATH_TO_STEP_FILE = "doors/doors1.stp"  # Path to the STEP file to be processed
-BOX_SIZE = 20  # mm, length from the centroid of the cylinder to the sides of the box
+BOX_SIZE = 11  # mm, length from the centroid of the cylinder to the sides of the box
 
 if __name__ == "__main__":
 
@@ -26,11 +28,6 @@ if __name__ == "__main__":
     print(
         f"Created {len(cylinder_graphs)} graphs in {time.time() - start_time:.3f} seconds"
     )
-    for g in cylinder_graphs:
-        print(f"Graph has {g.number_of_nodes()} nodes and {g.number_of_edges()} edges")
-
-    # print("Plotting graph...")
-    # plot_graph(cylinder_graphs[0])
 
     # Process Data to insert into GCN
     start_time = time.time()
@@ -40,6 +37,9 @@ if __name__ == "__main__":
         f"Encoded and converted graphs to PyG format in {time.time() - start_time:.3f} seconds"
     )
     print(PyG_graphs[0])
+    main_all = np.concatenate([g.x.numpy() for g in PyG_graphs], axis=0)
+    print("main  mean:", main_all.mean(axis=0)[:10])
+    print("main  std:", main_all.std(axis=0)[:10])
 
     # Load pre-trained GCN model
     print("Loading pre-trained GCN model...")
@@ -57,7 +57,9 @@ if __name__ == "__main__":
     loader = DataLoader(PyG_graphs, batch_size=len(PyG_graphs), shuffle=False)
     batch = next(iter(loader)).to(device)
     with torch.no_grad():
-        logits = model(features=batch.x, adj=batch.edge_index, batch=batch.batch)  # [G, 2]
+        logits = model(
+            features=batch.x, adj=batch.edge_index, batch=batch.batch
+        )  # [G, 2]
         preds = logits.argmax(dim=1).cpu().tolist()
 
     heatstake_coords = []
@@ -67,11 +69,9 @@ if __name__ == "__main__":
             heatstake_coords.append(cylinder_coords[i])
         else:
             print(f"Graph {i} is NOT classified as a heatstake.")
-    cylinder_coords = heatstake_coords
 
     print(f"Classified graphs in {time.time() - start_time:.3f} seconds")
     print(f"Number of heatstake coordinates: {len(heatstake_coords)}")
-
 
     # TODO Get the correct centroid coordinates for the heatstakes
 
