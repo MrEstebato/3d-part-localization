@@ -1,5 +1,8 @@
+
 import cadquery as cq
 import sys
+
+
 import math
 
 
@@ -56,36 +59,81 @@ def sphere2cartesian(esf):
     return esf[0]*math.sin(esf[2])*math.cos(esf[1]), esf[0]*math.sin(esf[2])*math.sin(esf[1]), esf[0]*math.cos(esf[2])
 
 
+def calcAng(point):
+    if(point[0] == 0):
+        if(point[1] > 0):
+            return math.pi/2
+        else:
+            return 3*math.pi/2
+        
+    ang = abs(math.atan(point[1] / point[0]))
+    if(point[0] > 0):
+        if(point[1] < 0):
+            ang = 2*math.pi - ang
+    else:
+        if(point[1] > 0):
+            ang = math.pi - ang
+        else:
+            ang = math.pi + ang
+    return ang
+
+def calcAng2Destiny(point1, point2):
+    if(point1 == [0,0]):
+        return 0, 0
+    ang = math.asin(point2[1]/distance([0,0], point1))
+    if(ang < 0):
+        ang = 2*math.pi + ang
+    angO = calcAng(point1)
+    difAng = ang - angO
+    return difAng, angO
+
+def rotate(point, ang):
+    mag = distance([0,0], point)
+    return [mag*math.cos(ang), mag*math.sin(ang)]
+
 def translatePoints(origin, pivot, points, baseDir = [1,0,0]):
+    newPivot = translate(origin, distance(origin, pivot), baseDir)
+    
     originalDir = direction(origin,pivot)
-    dirPivot = cartesian2sphere(originalDir)
+    
+    b = [pivot[0] - origin[0], pivot[1] - origin[1], pivot[2] - origin[2]]
+    b2 = [newPivot[0] - origin[0], newPivot[1] - origin[1], newPivot[2] - origin[2]]
+    
+    angY = calcAng2Destiny([b[0], b[2]], [b2[0], b2[2]])
+    planeY = rotate([b[0], b[2]], sum(angY))
 
-    baseSph = cartesian2sphere(baseDir)
-
-    dif = [baseSph[1] - dirPivot[1], baseSph[2] - dirPivot[2]]
+    angZ = calcAng2Destiny([planeY[0], b[1]], [b2[0], b2[1]])
     
     newPoints = []
     
     for p in points:
-        dirPoint = cartesian2sphere(direction(origin, p))
-        dirPoint2 = [dirPoint[0], dirPoint[1]+dif[0], dirPoint[2]+dif[1]]
-        newPoints.append(translate(origin, distance(origin, p), sphere2cartesian(dirPoint2)))
+        c = [p[0] - origin[0], p[1] - origin[1], p[2] - origin[2]]
+        angYC = calcAng([c[0], c[2]])
+        planeYC = rotate([c[0], c[2]], angYC + angY[0])
+
+        angZC = calcAng([planeYC[0], c[1]])
+        planeZC = rotate([planeYC[0], c[1]], angZC + angZ[0])
+        aux = [planeZC[0], planeZC[1], planeYC[1]]
+        aux = [aux[0] + origin[0], aux[1] + origin[1], aux[2] + origin[2]]
+
+        newPoints.append(aux)
     return newPoints, [translate(origin, distance(origin, pivot), baseDir), originalDir]
 
 
+
 def get_centroid(cuerpo: cq.Workplane):
-    sumaX = 0
-    sumaY = 0
-    sumaZ = 0
+    sumatoryX = 0
+    sumatoryY = 0
+    sumatoryZ = 0
     for v in cuerpo.vertices():
         vertex = v.Center().toTuple()
-        sumaX = sumaX + vertex[0]
-        sumaY = sumaY + vertex[1]
-        sumaZ = sumaZ + vertex[2]
-    sumaX = sumaX / len(cuerpo.vertices().all())
-    sumaY = sumaY / len(cuerpo.vertices().all())
-    sumaZ = sumaZ / len(cuerpo.vertices().all())
-    return [sumaX, sumaY, sumaZ]
+        sumatoryX = sumatoryX + vertex[0]
+        sumatoryY = sumatoryY + vertex[1]
+        sumatoryZ = sumatoryZ + vertex[2]
+    sumatoryX = sumatoryX / len(cuerpo.vertices().all())
+    sumatoryY = sumatoryY / len(cuerpo.vertices().all())
+    sumatoryZ = sumatoryZ / len(cuerpo.vertices().all())
+    return [sumatoryX, sumatoryY, sumatoryZ]
 
 
 class PrintPercentage:
