@@ -2,4 +2,7 @@ doors/*
 GCN/training_data/*
 __pycache__/
 **/__pycache__/
-config.json
+Gen_AI_CAD/config.json
+model.json
+output.py
+mats.yml
