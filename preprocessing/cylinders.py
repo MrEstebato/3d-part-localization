@@ -24,6 +24,8 @@ def find_cylinders(path, box_size=10):
         cq.selectors.InverseSelector(cq.selectors.TypeSelector(("OTHER")))
     )
 
+    # lids = solids.faces()
+
     aux = None
 
     for lid in lids.all():
@@ -32,7 +34,7 @@ def find_cylinders(path, box_size=10):
                 aux = lid
             else:
                 aux.add(lid)
-    # print(len(aux.all()))
+    print(len(aux.all()))
 
     lids = aux
     filtered_lids = None
