@@ -1,0 +1,27 @@
+
+{
+  "final_name": "Square Box",
+  "parts": {
+    "part_1": {
+      "coordinate_system": {
+        "Translation Vector": [0.0, 0.0, 0.0]
+      },
+      "sketch": {
+        "face_1": {
+          "loop_1": {
+            "rectangle_1": {
+              "Corner 1": [0.0, 0.0],
+              "Corner 2": [50.0, 50.0]
+            }
+          }
+        }
+      },
+      "extrusion": {
+        "extrude_depth_towards_normal": 50.0,
+        "extrude_depth_opposite_normal": 0.0,
+        "sketch_scale": 1.0,
+        "operation": "NewBodyFeatureOperation"
+      }
+    }
+  }
+}

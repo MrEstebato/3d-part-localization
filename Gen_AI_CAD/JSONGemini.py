@@ -5,20 +5,24 @@ import argparse
 from prompts import PROMPT
 from datetime import datetime
 import time
+import json
 
-genai.configure(api_key="llave")
+with open("config.json", "r") as f:
+    config = json.load(f)
+
+genai.configure(api_key=config["api_key"])
 
 def create_chat():
     model = genai.GenerativeModel(
-        model_name="gemini-2.5-flash",
+        model_name=config["model_name"],
         system_instruction=PROMPT,
-        generation_config={"temperature": 0}
+        generation_config={"temperature": config["temperature"]}
     )
     return model.start_chat()
 
 def get_prompt():
     """ Convierte el prompt a un prompt de Gemini  """
-    prompt = input("Bienvenido a tu asistente de creación de CAD, por favor ingresa las modificaciones que quieres hacer:\n")
+    prompt = input("Welcome to your CAD creation assistant, please enter what you would like to modify or create: \n")
     
     return prompt
 
@@ -29,4 +33,7 @@ prompt = get_prompt()
 
 response = chat.send_message(prompt)
 
-print (response.text)
+response = response.text.replace("```json","").strip("```")
+
+with open(config["input_file"], "w") as f:
+    f.write(response)

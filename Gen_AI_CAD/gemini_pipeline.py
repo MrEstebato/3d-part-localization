@@ -77,10 +77,10 @@ def generate_and_validate_code(chat, json_str, file_index, cq_dir, max_attempts=
 
     while True:
         attempt += 1
-        print(f"⚙️ Intento #{attempt} para {file_index}.py")
+        print(f"Intento #{attempt} para {file_index}.py")
 
         if response is None:
-            print("❌ No se recibió respuesta del modelo. Reintentando...")
+            print("No se recibió respuesta del modelo. Reintentando...")
             response = generate_code_with_timeout(chat, json_str)
             time.sleep(3)
             continue
@@ -93,11 +93,11 @@ def generate_and_validate_code(chat, json_str, file_index, cq_dir, max_attempts=
         result = subprocess.run(["python", cq_path], capture_output=True, text=True)
 
         if result.returncode == 0:
-            print(f"✅ {file_index}.py ejecutado correctamente.")
+            print(f"{file_index}.py ejecutado correctamente.")
             success = True
             break
         else:
-            print(f"❌ Error en ejecución de {file_index}.py")
+            print(f"Error en ejecución de {file_index}.py")
             error_msg = "\n".join(result.stderr.splitlines()[-10:])
             print(f"Últimos errores:\n{error_msg}\n")
 
@@ -110,7 +110,7 @@ def generate_and_validate_code(chat, json_str, file_index, cq_dir, max_attempts=
 
             # Si hay límite de intentos, verifica
             if max_attempts and attempt >= max_attempts:
-                print(f"🚫 Se alcanzó el número máximo de intentos ({max_attempts}).")
+                print(f"Se alcanzó el número máximo de intentos ({max_attempts}).")
                 break
 
             time.sleep(3)  # Espera breve antes del siguiente intento
@@ -140,7 +140,7 @@ def main():
 
     for file in os.listdir(root_dir):
         if file.endswith("json"):
-            print(f"🧩 Working with {file}")
+            print(f"Working with {file}")
             file_path = os.path.join(root_dir, file)
             file_index = file.split("_")[0]
             json_str = get_input(file_path, file_index, stl_dir)
