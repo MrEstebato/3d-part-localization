@@ -10,7 +10,7 @@ import time
 # ===============================
 # CONFIGURACIÓN DEL CLIENTE GEMINI
 # ===============================
-genai.configure(api_key="")
+genai.configure(api_key="llave")
 
 # Crea una función para generar modelos/chat
 def create_chat():
@@ -48,7 +48,6 @@ def get_pure_python(gemini_output):
 class TimeoutException(Exception):
     pass
 
-
 def timeout_handler(signum, frame):
     raise TimeoutException("Request timed out")
 
@@ -68,34 +67,55 @@ def generate_code_with_timeout(chat, user_input, timeout=60):
         return None
 
 
-def generate_and_validate_code(chat, json_str, file_index, cq_dir):
-    """Genera código CadQuery, lo guarda y lo valida ejecutándolo."""
-    response = generate_code_with_timeout(chat, json_str)
+def generate_and_validate_code(chat, json_str, file_index, cq_dir, max_attempts=None):
+    """Genera código CadQuery hasta que funcione correctamente o se alcance el límite de intentos."""
+    attempt = 0
+    success = False
     cq_path = os.path.join(cq_dir, f"{file_index}.py")
 
-    if response is None:
-        return False, cq_path
+    response = generate_code_with_timeout(chat, json_str)
 
-    for attempt in range(2):
+    while True:
+        attempt += 1
+        print(f"⚙️ Intento #{attempt} para {file_index}.py")
+
+        if response is None:
+            print("❌ No se recibió respuesta del modelo. Reintentando...")
+            response = generate_code_with_timeout(chat, json_str)
+            time.sleep(3)
+            continue
+
+        # Guarda el código generado
         with open(cq_path, "w", encoding="utf-8") as f:
             f.write(response)
 
+        # Ejecuta el archivo y valida si CadQuery funciona correctamente
         result = subprocess.run(["python", cq_path], capture_output=True, text=True)
 
         if result.returncode == 0:
-            return True, cq_path
+            print(f"✅ {file_index}.py ejecutado correctamente.")
+            success = True
+            break
         else:
-            if attempt == 0:
-                print(f"⚙️ Error ejecutando {file_index}.py")
-                error_msg = "\n".join(result.stderr.splitlines()[-5:])
-                retry_prompt = (
-                    f"code: {response} has an error: {error_msg}, "
-                    "generate it again, only give me python code"
-                )
-                response = generate_code_with_timeout(chat, retry_prompt)
-                if response is None:
-                    return False, cq_path
-    return False, cq_path
+            print(f"❌ Error en ejecución de {file_index}.py")
+            error_msg = "\n".join(result.stderr.splitlines()[-10:])
+            print(f"Últimos errores:\n{error_msg}\n")
+
+            retry_prompt = (
+                f"The previous CadQuery code had this error:\n{error_msg}\n"
+                "Generate a corrected version of the CadQuery code that works. "
+                "Only output valid Python code, without comments or explanations."
+            )
+            response = generate_code_with_timeout(chat, retry_prompt)
+
+            # Si hay límite de intentos, verifica
+            if max_attempts and attempt >= max_attempts:
+                print(f"🚫 Se alcanzó el número máximo de intentos ({max_attempts}).")
+                break
+
+            time.sleep(3)  # Espera breve antes del siguiente intento
+
+    return success, cq_path
 
 
 # ===============================

@@ -46,3 +46,4 @@ dependencies:
       - transformers==4.57.1
       - typing-extensions==4.15.0
       - urllib3==2.5.0
+      - google-generativeai==0.8.5

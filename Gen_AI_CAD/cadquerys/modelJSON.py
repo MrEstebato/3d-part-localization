@@ -1,20 +1,56 @@
 import cadquery as cq
+import json
 
-# Part 1: Cylinder
-radius = 0.375
-height = 0.1725
-scale = 0.75
-translation_z = 0.1725
+cad_sequence = {
+    "final_name": "Cylinder",
+    "parts": {
+        "part_1": {
+            "coordinate_system": {
+                "Translation Vector": [0.0, 0.0, 0.1725]
+            },
+            "sketch": {
+                "face_1": {
+                    "loop_1": {
+                        "circle_1": {
+                            "Center": [0.375, 0.375],
+                            "Radius": 0.375
+                        }
+                    }
+                }
+            },
+            "extrusion": {
+                "extrude_depth_towards_normal": 0.0,
+                "extrude_depth_opposite_normal": 0.1725,
+                "sketch_scale": 0.75,
+                "operation": "NewBodyFeatureOperation"
+            }
+        }
+    }
+}
 
-cylinder = cq.Workplane("XY").moveTo(radius, radius).circle(radius).extrude(-height)
+result = cq.Workplane("XY")
 
-# Scaling is applied by modifying the radius in the circle definition
-scaled_radius = radius * scale
-cylinder = cq.Workplane("XY").moveTo(scaled_radius, scaled_radius).circle(scaled_radius).extrude(-height)
+for part_name, part_data in cad_sequence["parts"].items():
+    translation_vector = part_data["coordinate_system"]["Translation Vector"]
+    result = result.translate(translation_vector)
 
+    sketch_data = part_data["sketch"]
+    for face_name, face_data in sketch_data.items():
+        for loop_name, loop_data in face_data.items():
+            for circle_name, circle_data in loop_data.items():
+                center = circle_data["Center"]
+                radius = circle_data["Radius"]
+                result = result.circle(radius, center=center)
 
-cylinder = cylinder.translate((0, 0, translation_z))
+    extrusion_data = part_data["extrusion"]
+    extrude_depth_towards_normal = extrusion_data["extrude_depth_towards_normal"]
+    extrude_depth_opposite_normal = extrusion_data["extrude_depth_opposite_normal"]
+    sketch_scale = extrusion_data["sketch_scale"]
+    operation = extrusion_data["operation"]
 
-# Export to STL
-file_name = "./salidasSTL/modeljson.stl"
-cq.exporters.export(cylinder, file_name, tolerance=1e-3, angularTolerance=0.1)
+    result = result.extrude(-extrude_depth_opposite_normal)
+
+file_name = "./salidasSTL/model.json.stl"
+cq.exporters.export(result, file_name)
+
+print(f"Model saved to {file_name}")
