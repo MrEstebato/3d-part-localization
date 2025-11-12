@@ -168,8 +168,8 @@ def find_cylinders(path, box_size=10):
     printer = utils.PrintPercentage(len(lids.all()), "Locating...")
     for lid in lids.all():
         
-        #cylinders.append(utils.get_centroid(lid))
-        cylinders.append(get_heatstake_centroid(lid))
+        cylinders.append(utils.get_centroid(lid))
+        #cylinders.append(get_heatstake_centroid(lid))
         i += 1
         printer.print(i)
     
