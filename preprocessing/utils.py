@@ -140,10 +140,12 @@ class PrintPercentage:
     percent = 0
     total = None
     parts = None
+    title = None
     
     def __init__(self, total, title:str = "", parts:int = 20):
         self.parts = parts
         self.total = total
+        self.title = title
         print("["+title+" "*(parts-2-len(title))+"]")
     
     def print(self, current):
@@ -155,3 +157,11 @@ class PrintPercentage:
         self.percent = fit
         if(fit == self.parts):
             print("")
+    
+    def restart(self, title = None):
+        if title == None:
+            title = self.title
+        else:
+            self.title = title
+        print("["+title+" "*(self.parts-2-len(title))+"]")
+        self.percent = 0
