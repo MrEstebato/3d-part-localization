@@ -1,0 +1,7 @@
+{
+    "api_key": "AIzaSyANRbvsGTs8H74NZQjx9_Fp_wYCl6NYruE",
+    "model_name": "gemini-2.5-flash",
+    "temperature": 0,
+    "input_file": "model.json",
+    "output_file": "output.py"
+}

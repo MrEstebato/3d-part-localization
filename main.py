@@ -1,15 +1,14 @@
 import torch
 from preprocessing.cylinders import find_cylinders
-from preprocessing.graphs import create_graphs, plot_graph, nx_to_PyG
+from preprocessing.graphs import create_graphs, nx_to_PyG
 from torch_geometric.loader import DataLoader
-from GCN.GCN import GCN2, GCN3
+from GCN.GCN import GCN3
 import time
 import csv
-import numpy as np
-import networkx as nx
+from preprocessing.cylinders import get_heatstake_centroid
 
 # CONSTANTS
-PATH_TO_STEP_FILE = "doors/doors3.STEP"  # Path to the STEP file to be processed
+PATH_TO_STEP_FILE = "doors/doors4.stp"  # Path to the STEP file to be processed
 BOX_SIZE = 11  # mm, length from the centroid of the cylinder to the sides of the box
 
 if __name__ == "__main__":
@@ -18,7 +17,7 @@ if __name__ == "__main__":
     # Find cylinders in the STEP fi1le
     start_time = time.time()
     print("Finding cylinders...")
-    cylinder_coords, cylinders = find_cylinders(PATH_TO_STEP_FILE, BOX_SIZE)
+    lids, cylinders = find_cylinders(PATH_TO_STEP_FILE, BOX_SIZE)
     print(f"Found {len(cylinders)} cylinders in {time.time() - start_time:.3f} seconds")
 
     # Create graphs
@@ -37,9 +36,9 @@ if __name__ == "__main__":
         f"Encoded and converted graphs to PyG format in {time.time() - start_time:.3f} seconds"
     )
     print(PyG_graphs[0])
-    main_all = np.concatenate([g.x.numpy() for g in PyG_graphs], axis=0)
-    print("main  mean:", main_all.mean(axis=0)[:10])
-    print("main  std:", main_all.std(axis=0)[:10])
+    # main_all = np.concatenate([g.x.numpy() for g in PyG_graphs], axis=0)
+    # print("main  mean:", main_all.mean(axis=0)[:10])
+    # print("main  std:", main_all.std(axis=0)[:10])
 
     # Load pre-trained GCN model
     print("Loading pre-trained GCN model...")
@@ -66,14 +65,12 @@ if __name__ == "__main__":
     for i, p in enumerate(preds):
         if p == 1:
             print(f"Graph {i} is classified as a heatstake.")
-            heatstake_coords.append(cylinder_coords[i])
+            heatstake_coords.append(get_heatstake_centroid(lids[i]))
         else:
             print(f"Graph {i} is NOT classified as a heatstake.")
 
     print(f"Classified graphs in {time.time() - start_time:.3f} seconds")
     print(f"Number of heatstake coordinates: {len(heatstake_coords)}")
-
-    # TODO Get the correct centroid coordinates for the heatstakes
 
     # Put all coordinates in a csv
     print("Writing into csv...")
