@@ -1,26 +1,107 @@
 
 {
-  "final_name": "Square Box",
+  "final_name": "Car_Mat",
   "parts": {
     "part_1": {
+      "name": "Car_Mat_Base",
       "coordinate_system": {
         "Translation Vector": [0.0, 0.0, 0.0]
       },
       "sketch": {
         "face_1": {
           "loop_1": {
-            "rectangle_1": {
-              "Corner 1": [0.0, 0.0],
-              "Corner 2": [50.0, 50.0]
+            "rounded_rectangle_1": {
+              "Center": [0.0, 0.0],
+              "Width": 0.5,
+              "Length": 0.7,
+              "Corner_Radius": 0.05
             }
           }
         }
       },
       "extrusion": {
-        "extrude_depth_towards_normal": 50.0,
+        "extrude_depth_towards_normal": 0.010,
         "extrude_depth_opposite_normal": 0.0,
         "sketch_scale": 1.0,
         "operation": "NewBodyFeatureOperation"
+      }
+    },
+    "part_2": {
+      "name": "Pedal_Cutout",
+      "coordinate_system": {
+        "Translation Vector": [-0.1, 0.2, 0.0]
+      },
+      "sketch": {
+        "face_1": {
+          "loop_1": {
+            "rectangle_1": {
+              "Center": [0.0, 0.0],
+              "Width": 0.2,
+              "Length": 0.3
+            }
+          }
+        }
+      },
+      "extrusion": {
+        "extrude_depth_towards_normal": 0.010,
+        "extrude_depth_opposite_normal": 0.0,
+        "sketch_scale": 1.0,
+        "operation": "CutFeatureOperation"
+      }
+    },
+    "part_3": {
+      "name": "Foot_Rest_Cutout",
+      "coordinate_system": {
+        "Translation Vector": [-0.175, 0.25, 0.0]
+      },
+      "sketch": {
+        "face_1": {
+          "loop_1": {
+            "rectangle_1": {
+              "Center": [0.0, 0.0],
+              "Width": 0.15,
+              "Length": 0.2
+            }
+          }
+        }
+      },
+      "extrusion": {
+        "extrude_depth_towards_normal": 0.010,
+        "extrude_depth_opposite_normal": 0.0,
+        "sketch_scale": 1.0,
+        "operation": "CutFeatureOperation"
+      }
+    },
+    "part_4": {
+      "name": "Mat_Border",
+      "coordinate_system": {
+        "Translation Vector": [0.0, 0.0, 0.010]
+      },
+      "sketch": {
+        "face_1": {
+          "loop_1": {
+            "rounded_rectangle_1": {
+              "Center": [0.0, 0.0],
+              "Width": 0.5,
+              "Length": 0.7,
+              "Corner_Radius": 0.05
+            }
+          },
+          "loop_2": {
+            "rounded_rectangle_1": {
+              "Center": [0.0, 0.0],
+              "Width": 0.472,
+              "Length": 0.672,
+              "Corner_Radius": 0.036
+            }
+          }
+        }
+      },
+      "extrusion": {
+        "extrude_depth_towards_normal": 0.005,
+        "extrude_depth_opposite_normal": 0.0,
+        "sketch_scale": 1.0,
+        "operation": "JoinFeatureOperation"
       }
     }
   }
