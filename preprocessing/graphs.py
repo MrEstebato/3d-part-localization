@@ -146,6 +146,9 @@ def encode_graphs(graphs):
     MAX_GEOM_FEAT_LEN = FACE_FEAT_LEN  # 11
 
     for G in graphs:
+        if G.number_of_nodes() == 0:
+            G.add_node("P0", type="other")
+
         node_features = []
         for node_id, attrs in G.nodes(data=True):
             node_type = attrs.get("type", "other")

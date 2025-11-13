@@ -8,7 +8,7 @@ import csv
 from preprocessing.cylinders import get_heatstake_centroid
 
 # CONSTANTS
-PATH_TO_STEP_FILE = "doors/doors4.stp"  # Path to the STEP file to be processed
+PATH_TO_STEP_FILE = "doors/doors1.stp"  # Path to the STEP file to be processed
 BOX_SIZE = 11  # mm, length from the centroid of the cylinder to the sides of the box
 
 if __name__ == "__main__":
@@ -35,10 +35,8 @@ if __name__ == "__main__":
     print(
         f"Encoded and converted graphs to PyG format in {time.time() - start_time:.3f} seconds"
     )
-    print(PyG_graphs[0])
-    # main_all = np.concatenate([g.x.numpy() for g in PyG_graphs], axis=0)
-    # print("main  mean:", main_all.mean(axis=0)[:10])
-    # print("main  std:", main_all.std(axis=0)[:10])
+    for g in PyG_graphs:
+        print(f"Graph has {g.num_nodes} nodes and {g.num_edges} edges.")
 
     # Load pre-trained GCN model
     print("Loading pre-trained GCN model...")
@@ -46,7 +44,7 @@ if __name__ == "__main__":
     model = GCN3(feature_dim_size=PyG_graphs[0].num_node_features).to(device)
 
     state_dict = torch.load(
-        "GCN/good_heatstake_classifier.pth", map_location=device, weights_only=False
+        "GCN/good_heatstake_classifier2.pth", map_location=device, weights_only=False
     )
     model.load_state_dict(state_dict)
     model.eval()
