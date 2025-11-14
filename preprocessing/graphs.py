@@ -13,12 +13,25 @@ def create_graphs(cylinders):
 
 
 def normalize_features(graphs):
-    all_feats = np.concatenate([g.graph["x"] for g in graphs], axis=0)
-    mean = all_feats.mean(axis=0, keepdims=True)
-    std = all_feats.std(axis=0, keepdims=True) + 1e-6
 
+    i = 0
     for g in graphs:
-        g.graph["x"] = (g.graph["x"] - mean) / std
+        all_feats = np.asarray(g.graph["x"])
+        transposed_feats = all_feats.transpose()
+        normalized = None
+        for i in transposed_feats:
+            # print("i", i)
+            i_mean = i.mean()
+            i_std = i.std() + 1e-6
+            i -= i_mean
+            i /= i_std
+            if normalized is None:
+                normalized = np.array([i])
+            else:
+                normalized = np.concatenate((normalized, [i]), axis=0)
+        normalized = normalized.transpose()
+        # print("Normalized feature shape:", normalized.shape)
+        g.graph["x"] = normalized
 
 
 def get_face_features(face):
@@ -68,7 +81,7 @@ def get_vertex_features(vertex, degree):
     # coordinates (x,y,z)
     coords = np.array(vertex.toTuple(), dtype=np.float32)
 
-    # degree matters (heat stakes ribs attach to cylinder at high valence)
+    # degree
     degree = np.array([degree], dtype=np.float32)
 
     return np.concatenate([coords, degree], axis=0)
